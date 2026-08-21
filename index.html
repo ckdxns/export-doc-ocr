@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수출실적증명서 & 수출신고필증 OCR 데이터 자동 추출 및 분석 시스템</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <!-- Tesseract.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- SheetJS (XLSX) CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+        .badge-perf { background-color: #DBEAFE; color: #1E40AF; border: 1px solid #BFDBFE; }
+        .badge-decl { background-color: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; }
+        .editable-cell:hover { background-color: #FEF3C7; cursor: pointer; }
+        .editable-cell:focus { background-color: #FEF08A; outline: 2px solid #F59E0B; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg">
+                    <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">수출 문서 OCR 분석 & 성약액 산출 시스템</h1>
+                    <p class="text-xs text-slate-500">수출실적증명서 & 수출신고필증 자동 분류, 데이터 정규화 및 엑셀 다운로드</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5 animate-pulse"></span>
+                    GitHub Pages Client-Ready
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Grid Layout: Sidebar & Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            <!-- Left Sidebar Controls -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Sample Data Box -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center space-x-2 text-slate-800 font-bold text-sm">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-blue-600"></i>
+                        <span>원클릭 샘플 테스트</span>
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        실제 한국무역협회 및 관세청 표준 양식의 샘플 4종((주)ABC, (주)XYZ, (주)글로벌테크)을 즉시 로드하여 분석합니다.
+                    </p>
+                    <button id="btnLoadSamples" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center justify-center space-x-2">
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        <span>샘플 문서 일괄 로드 및 분석</span>
+                    </button>
+                </div>
+
+                <!-- Info Box -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex items-center space-x-2 text-slate-800 font-bold text-sm">
+                        <i data-lucide="info" class="w-4 h-4 text-slate-500"></i>
+                        <span>표준 데이터 스키마</span>
+                    </div>
+                    <ul class="text-xs text-slate-600 space-y-2">
+                        <li class="flex items-start space-x-2">
+                            <span class="font-bold text-slate-800 min-w-[50px]">나라</span>
+                            <span>수출 목적국 / 바이어 국가</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="font-bold text-slate-800 min-w-[50px]">기업</span>
+                            <span>수출자 / 상호명</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="font-bold text-slate-800 min-w-[50px]">성과월</span>
+                            <span>신고수리일자/실적월 (YYYY-MM)</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="font-bold text-slate-800 min-w-[50px]">수출액</span>
+                            <span>결제금액 / FOB 성약액 (USD)</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <button id="btnReset" class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center justify-center space-x-1.5">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span>분석 데이터 초기화</span>
+                </button>
+            </div>
+
+            <!-- Right Main Area -->
+            <div class="lg:col-span-3 space-y-6">
+
+                <!-- Step 1: Upload Zone -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-base font-bold text-slate-900 mb-2 flex items-center space-x-2">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">1</span>
+                        <span>문서 업로드 (PDF / 이미지 파일)</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-4">수출실적증명서 및 수출신고필증 스캔본/PDF를 드래그하거나 선택하세요 (다중 파일 지원).</p>
+
+                    <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-8 text-center bg-slate-50 hover:bg-blue-50/40 transition cursor-pointer">
+                        <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.png,.jpg,.jpeg">
+                        <div class="flex flex-col items-center justify-center space-y-3">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-700">클릭하여 파일을 선택하거나 여기로 드래그하세요</p>
+                                <p class="text-xs text-slate-400 mt-1">PDF, PNG, JPG, JPEG 형식 지원</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="progressContainer" class="hidden mt-4 space-y-2">
+                        <div class="flex justify-between text-xs font-semibold text-slate-600">
+                            <span id="progressStatus">분석 중...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Document Cards -->
+                <div id="cardsSection" class="hidden space-y-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">2</span>
+                        <span>문서별 자동 분류 및 OCR 추출 내역</span>
+                    </h2>
+                    <div id="cardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+                </div>
+
+                <!-- Step 3 & 4: Filter, KPI & Editable Table -->
+                <div id="resultSection" class="hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">3</span>
+                            <span>기업별 필터링 & 데이터 편집</span>
+                        </h2>
+                        
+                        <!-- Company Filter -->
+                        <div class="flex items-center space-x-2">
+                            <label for="companySelect" class="text-xs font-semibold text-slate-600 whitespace-nowrap">기업 선택:</label>
+                            <select id="companySelect" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-1.5 font-medium shadow-sm"></select>
+                        </div>
+                    </div>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <p class="text-xs font-medium text-slate-500" id="kpiLabelCompany">선택 기업 총수출 성약액</p>
+                            <p class="text-xl font-bold text-blue-700 mt-1" id="kpiTotalAmount">$0</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <p class="text-xs font-medium text-slate-500">처리 건수</p>
+                            <p class="text-xl font-bold text-slate-800 mt-1" id="kpiTotalCount">0 건</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <p class="text-xs font-medium text-slate-500">수출 대상 국가</p>
+                            <p class="text-xl font-bold text-slate-800 mt-1" id="kpiTotalCountries">0 개국</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <p class="text-xs font-medium text-slate-500">분석 기업 수</p>
+                            <p class="text-xl font-bold text-slate-800 mt-1" id="kpiTotalCompanies">0 개사</p>
+                        </div>
+                    </div>
+
+                    <!-- Editable Table Guide -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-700 flex items-center space-x-1">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-500"></i>
+                                <span>데이터 편집 테이블 (셀 더블클릭 시 직접 수정 가능)</span>
+                            </span>
+                            <span class="text-[11px] text-slate-400">수정 시 총수출 성약액이 실시간 재계산됩니다</span>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm text-left">
+                                <thead class="bg-slate-100 text-xs font-bold text-slate-700">
+                                    <tr>
+                                        <th class="px-4 py-3 text-center">나라</th>
+                                        <th class="px-4 py-3 text-center">기업</th>
+                                        <th class="px-4 py-3 text-center">성과월</th>
+                                        <th class="px-4 py-3 text-right">수출액 (USD)</th>
+                                        <th class="px-4 py-3 text-center">문서 유형</th>
+                                        <th class="px-4 py-3 text-left">파일명</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody" class="divide-y divide-slate-200 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Export Buttons -->
+                    <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                        <button id="btnExportCsv" class="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition flex items-center justify-center space-x-2">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span>CSV 다운로드 (.csv)</span>
+                        </button>
+                        <button id="btnExportExcel" class="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center justify-center space-x-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span id="btnExcelLabel">표준 엑셀 다운로드 (.xlsx)</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Logic Script -->
+    <script>
+        // Data State
+        let records = [];
+        const COUNTRY_MAP = {
+            "US": "미국", "USA": "미국", "UNITED STATES": "미국", "미합중국": "미국",
+            "CN": "중국", "CHINA": "중국",
+            "JP": "일본", "JAPAN": "일본",
+            "VN": "베트남", "VIETNAM": "베트남",
+            "DE": "독일", "GERMANY": "독일",
+            "GB": "영국", "UK": "영국", "UNITED KINGDOM": "영국",
+            "SG": "싱가포르", "SINGAPORE": "싱가포르",
+            "TW": "대만", "TAIWAN": "대만",
+            "IN": "인도", "INDIA": "인도",
+            "ID": "인도네시아", "INDONESIA": "인도네시아",
+            "TH": "태국", "THAILAND": "태국",
+            "MY": "말레이시아", "MALAYSIA": "말레이시아",
+            "AU": "호주", "AUSTRALIA": "호주",
+            "CA": "캐나다", "CANADA": "캐나다",
+            "HK": "홍콩", "HONG KONG": "홍콩",
+            "MX": "멕시코", "MEXICO": "멕시코",
+            "BR": "브라질", "BRAZIL": "브라질",
+            "FR": "프랑스", "FRANCE": "프랑스",
+            "IT": "이탈리아", "ITALY": "이탈리아",
+            "NL": "네덜란드", "NETHERLANDS": "네덜란드"
+        };
+
+        // Built-in Mock Samples
+        const SAMPLE_DATA = [
+            {
+                fileName: "수출실적증명서_ABC_미국_50000.pdf",
+                docType: "수출실적증명서",
+                confidence: 0.96,
+                country: "미국",
+                company: "(주)ABC",
+                month: "2024-01",
+                amount: 50000
+            },
+            {
+                fileName: "수출신고필증_ABC_베트남_30000.pdf",
+                docType: "수출신고필증",
+                confidence: 1.0,
+                country: "베트남",
+                company: "(주)ABC",
+                month: "2024-02",
+                amount: 30000
+            },
+            {
+                fileName: "수출신고필증_XYZ_일본_20000.pdf",
+                docType: "수출신고필증",
+                confidence: 1.0,
+                country: "일본",
+                company: "(주)XYZ",
+                month: "2024-01",
+                amount: 20000
+            },
+            {
+                fileName: "수출실적증명서_글로벌테크_독일_75000.pdf",
+                docType: "수출실적증명서",
+                confidence: 0.95,
+                country: "독일",
+                company: "(주)글로벌테크",
+                month: "2024-03",
+                amount: 75000
+            }
+        ];
+
+        // Normalization Helpers
+        function normalizeCountry(raw) {
+            if (!raw) return "기타";
+            const clean = raw.replace(/\(.*?\)/g, "").trim().toUpperCase();
+            if (COUNTRY_MAP[clean]) return COUNTRY_MAP[clean];
+            for (let [k, v] of Object.entries(COUNTRY_MAP)) {
+                if (raw.includes(v) || clean === k) return v;
+            }
+            const hangul = raw.replace(/[^가-힣]/g, "");
+            return hangul.length >= 2 ? hangul : "미확인국가";
+        }
+
+        function normalizeMonth(raw) {
+            if (!raw) return "2024-01";
+            const m = raw.match(/\b(20\d{2})[-./년\s]+(0[1-9]|1[0-2]|\d{1,2})\b/);
+            if (m) {
+                return `${m[1]}-${m[2].padStart(2, '0')}`;
+            }
+            return "2024-01";
+        }
+
+        function normalizeAmount(raw) {
+            if (typeof raw === 'number') return raw;
+            if (!raw) return 0;
+            const matches = raw.toString().match(/[\d,]+(?:\.\d+)?/g);
+            if (!matches) return 0;
+            for (let i = matches.length - 1; i >= 0; i--) {
+                const val = parseFloat(matches[i].replace(/,/g, ''));
+                if (val > 0) return val;
+            }
+            return 0;
+        }
+
+        // Classifier & Parser
+        function classifyText(text) {
+            const clean = text.replace(/[\s\n\r]/g, '').toLowerCase();
+            let perfScore = 0;
+            let declScore = 0;
+
+            if (clean.includes("수출실적증명서") || clean.includes("한국무역협회")) perfScore += 10;
+            if (clean.includes("수출신고필증") || clean.includes("신고수리일자") || clean.includes("관세청")) declScore += 10;
+
+            if (clean.includes("인정실적") || clean.includes("실적기간") || clean.includes("직수출")) perfScore += 3;
+            if (clean.includes("결제금액") || clean.includes("fob") || clean.includes("수출화주") || clean.includes("신고번호")) declScore += 3;
+
+            if (perfScore > declScore) return { docType: "수출실적증명서", confidence: Math.min(1.0, perfScore / Math.max(10, perfScore + declScore)) };
+            if (declScore > perfScore) return { docType: "수출신고필증", confidence: Math.min(1.0, declScore / Math.max(10, perfScore + declScore)) };
+            return { docType: "수출신고필증", confidence: 0.6 };
+        }
+
+        function parseDocumentText(text, docType, fileName) {
+            let company = "(주)미상기업";
+            let country = "기타";
+            let month = "2024-01";
+            let amount = 0;
+
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            for (let line of lines) {
+                // 1. Company
+                if (company === "(주)미상기업" && (line.includes("상호") || line.includes("수출자") || line.includes("신청인") || line.includes("화주")) && line.includes(":")) {
+                    const val = line.split(":")[1].trim();
+                    if (val && !val.includes("정보") && !val.includes("현황")) company = val;
+                }
+                // 2. Country
+                if (country === "기타" && (line.includes("목적국") || line.includes("수출국가") || line.includes("바이어국가")) && line.includes(":")) {
+                    const val = line.split(":")[1].trim();
+                    country = normalizeCountry(val);
+                }
+                // 3. Month
+                if (month === "2024-01" && (line.includes("신고수리일자") || line.includes("수리일자") || line.includes("실적연월") || line.includes("실적기간") || line.includes("발급일자")) && line.includes(":")) {
+                    const val = line.split(":")[1].trim();
+                    month = normalizeMonth(val);
+                }
+                // 4. Amount
+                if (amount === 0 && (line.includes("결제금액") || line.includes("총신고가격") || line.includes("FOB") || line.includes("인정실적") || line.includes("실적금액")) && line.includes(":")) {
+                    const val = line.split(":")[1].trim();
+                    amount = normalizeAmount(val);
+                }
+            }
+
+            // Fallback Regex
+            if (company === "(주)미상기업") {
+                const compMatch = text.match(/(\((?:주|유)\)[가-힣A-Za-z0-9]+|[가-힣A-Za-z0-9]+\s*주식회사)/);
+                if (compMatch) company = compMatch[1].trim();
+            }
+            if (country === "기타") {
+                for (let [k, v] of Object.entries(COUNTRY_MAP)) {
+                    if (text.includes(v) || text.toUpperCase().includes(` ${k} `)) {
+                        country = v;
+                        break;
+                    }
+                }
+            }
+            if (amount === 0) {
+                const amtMatch = text.match(/(?:USD|\$|금액)\s*[:：]?\s*([\d,]+(?:\.\d+)?)/i);
+                if (amtMatch) amount = normalizeAmount(amtMatch[1]);
+            }
+
+            return {
+                fileName,
+                docType,
+                country,
+                company,
+                month,
+                amount
+            };
+        }
+
+        // PDF / Image Processing
+        async function processFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            let fullText = "";
+
+            if (ext === 'pdf') {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(s => s.str).join(' ');
+                    fullText += pageText + "\n";
+                }
+                // If scanned PDF with no text, use OCR on rendered canvas
+                if (fullText.trim().length < 20) {
+                    const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    const { data: { text } } = await Tesseract.recognize(canvas, 'kor+eng');
+                    fullText = text;
+                }
+            } else if (['png', 'jpg', 'jpeg'].includes(ext)) {
+                const { data: { text } } = await Tesseract.recognize(file, 'kor+eng');
+                fullText = text;
+            }
+
+            const { docType, confidence } = classifyText(fullText);
+            const parsed = parseDocumentText(fullText, docType, file.name);
+            parsed.confidence = confidence;
+            return parsed;
+        }
+
+        // Render UI
+        function updateUI() {
+            if (records.length === 0) {
+                document.getElementById('cardsSection').classList.add('hidden');
+                document.getElementById('resultSection').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('cardsSection').classList.remove('hidden');
+            document.getElementById('resultSection').classList.remove('hidden');
+
+            // 1. Render Document Cards
+            const cardsContainer = document.getElementById('cardsContainer');
+            cardsContainer.innerHTML = '';
+            records.forEach(r => {
+                const badgeClass = r.docType === '수출실적증명서' ? 'badge-perf' : 'badge-decl';
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2";
+                card.innerHTML = `
+                    <div class="font-bold text-xs text-slate-800 truncate" title="${r.fileName}">📄 ${r.fileName}</div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold ${badgeClass}">${r.docType}</span>
+                        <span class="text-[11px] text-slate-400">신뢰도 ${Math.round((r.confidence || 0.95)*100)}%</span>
+                    </div>
+                    <div class="text-xs text-slate-600 space-y-0.5 pt-1 border-t border-slate-100">
+                        <p>• <b>기업</b>: ${r.company}</p>
+                        <p>• <b>국가</b>: ${r.country}</p>
+                        <p>• <b>성과월</b>: ${r.month}</p>
+                        <p>• <b>수출액</b>: $${r.amount.toLocaleString()}</p>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
+            });
+
+            // 2. Populate Company Select
+            const companySelect = document.getElementById('companySelect');
+            const currentSelected = companySelect.value || "전체";
+            const companies = ["전체", ...new Set(records.map(r => r.company))].sort();
+            
+            companySelect.innerHTML = '';
+            companies.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                if (c === currentSelected) opt.selected = true;
+                companySelect.appendChild(opt);
+            });
+
+            renderFilteredTable();
+            lucide.createIcons();
+        }
+
+        function renderFilteredTable() {
+            const selectedCompany = document.getElementById('companySelect').value || "전체";
+            const filtered = selectedCompany === "전체" ? records : records.filter(r => r.company === selectedCompany);
+
+            // KPI update
+            const totalAmount = filtered.reduce((acc, cur) => acc + cur.amount, 0);
+            document.getElementById('kpiLabelCompany').textContent = selectedCompany === "전체" ? "전체 기업 총수출 성약액" : `${selectedCompany} 총수출 성약액`;
+            document.getElementById('kpiTotalAmount').textContent = `$${totalAmount.toLocaleString()} USD`;
+            document.getElementById('kpiTotalCount').textContent = `${filtered.length} 건`;
+            document.getElementById('kpiTotalCountries').textContent = `${new Set(filtered.map(r => r.country)).size} 개국`;
+            document.getElementById('kpiTotalCompanies').textContent = `${new Set(records.map(r => r.company)).size} 개사`;
+            document.getElementById('btnExcelLabel').textContent = `'${selectedCompany}' 엑셀 다운로드 (.xlsx)`;
+
+            // Table Render
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            filtered.forEach((r, idx) => {
+                const realIndex = records.indexOf(r);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition text-slate-800";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-center editable-cell font-medium" contenteditable="true" data-field="country" data-index="${realIndex}">${r.country}</td>
+                    <td class="px-4 py-3 text-center editable-cell font-bold text-slate-900" contenteditable="true" data-field="company" data-index="${realIndex}">${r.company}</td>
+                    <td class="px-4 py-3 text-center editable-cell text-slate-600" contenteditable="true" data-field="month" data-index="${realIndex}">${r.month}</td>
+                    <td class="px-4 py-3 text-right editable-cell font-bold text-blue-700" contenteditable="true" data-field="amount" data-index="${realIndex}">$${r.amount.toLocaleString()}</td>
+                    <td class="px-4 py-3 text-center text-xs text-slate-500">${r.docType}</td>
+                    <td class="px-4 py-3 text-left text-xs text-slate-400 truncate max-w-[150px]" title="${r.fileName}">${r.fileName}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Attach inline editing listeners
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('blur', function() {
+                    const idx = parseInt(this.getAttribute('data-index'));
+                    const field = this.getAttribute('data-field');
+                    let val = this.innerText.trim();
+
+                    if (field === 'amount') {
+                        records[idx].amount = normalizeAmount(val);
+                    } else if (field === 'country') {
+                        records[idx].country = normalizeCountry(val);
+                    } else if (field === 'month') {
+                        records[idx].month = normalizeMonth(val);
+                    } else {
+                        records[idx][field] = val;
+                    }
+                    renderFilteredTable();
+                });
+            });
+        }
+
+        // Export Functions
+        function exportToExcel() {
+            const selectedCompany = document.getElementById('companySelect').value || "전체";
+            const filtered = selectedCompany === "전체" ? records : records.filter(r => r.company === selectedCompany);
+
+            const exportData = filtered.map(r => ({
+                "나라": r.country,
+                "기업": r.company,
+                "성과월": r.month,
+                "수출액": r.amount
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `${selectedCompany.slice(0, 20)} 수출내역`);
+
+            // Column width
+            ws['!cols'] = [{ wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 18 }];
+
+            const fileName = `수출실적내역_${selectedCompany}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        }
+
+        function exportToCsv() {
+            const selectedCompany = document.getElementById('companySelect').value || "전체";
+            const filtered = selectedCompany === "전체" ? records : records.filter(r => r.company === selectedCompany);
+
+            let csvContent = "\uFEFF나라,기업,성과월,수출액\n";
+            filtered.forEach(r => {
+                csvContent += `"${r.country}","${r.company}","${r.month}",${r.amount}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `수출실적내역_${selectedCompany}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.csv`;
+            link.click();
+        }
+
+        // Event Listeners
+        document.getElementById('btnLoadSamples').addEventListener('click', () => {
+            records = JSON.parse(JSON.stringify(SAMPLE_DATA));
+            updateUI();
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            records = [];
+            updateUI();
+        });
+
+        document.getElementById('companySelect').addEventListener('change', renderFilteredTable);
+        document.getElementById('btnExportExcel').addEventListener('click', exportToExcel);
+        document.getElementById('btnExportCsv').addEventListener('click', exportToCsv);
+
+        // Drag & Drop
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500', 'bg-blue-50/50'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-blue-500', 'bg-blue-50/50'); });
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+            if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFiles(e.target.files);
+        });
+
+        async function handleFiles(files) {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressStatus = document.getElementById('progressStatus');
+            const progressPercent = document.getElementById('progressPercent');
+
+            progressContainer.classList.remove('hidden');
+            const total = files.length;
+
+            for (let i = 0; i < total; i++) {
+                const file = files[i];
+                progressStatus.textContent = `[${i+1}/${total}] '${file.name}' OCR 및 서식 분석 중...`;
+                const percent = Math.round(((i + 0.5) / total) * 100);
+                progressBar.style.width = `${percent}%`;
+                progressPercent.textContent = `${percent}%`;
+
+                try {
+                    const parsed = await processFile(file);
+                    records.push(parsed);
+                } catch (err) {
+                    console.error("Error processing file:", err);
+                }
+
+                progressBar.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
+                progressPercent.textContent = `${Math.round(((i + 1) / total) * 100)}%`;
+            }
+
+            progressStatus.textContent = `총 ${total}건 분석 완료!`;
+            setTimeout(() => { progressContainer.classList.add('hidden'); }, 1500);
+            updateUI();
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
