@@ -43,7 +43,7 @@
             <div class="flex items-center space-x-2">
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                    2.수출대행자 & 13.목적국 매핑 적용
+                    지능형 노이즈 제거 & 정밀 매핑 v2.0
                 </span>
             </div>
         </div>
@@ -80,11 +80,11 @@
                     <ul class="text-xs text-slate-600 space-y-2">
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">기업명</span>
-                            <span>2. 수출대행자 옆 상호</span>
+                            <span>2. 수출대행자 옆 상호 (노이즈 자동 분리)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">나라</span>
-                            <span>13. 목적국 (CN $\rightarrow$ 중국)</span>
+                            <span>13. 목적국 (CN/PRC $\rightarrow$ 중국)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">성과월</span>
@@ -122,7 +122,7 @@
                             </div>
                             <div>
                                 <p class="text-sm font-semibold text-slate-700">클릭하여 파일을 선택하거나 여기로 드래그하세요</p>
-                                <p class="text-xs text-slate-400 mt-1">PDF, PNG, JPG, JPEG 형식 지원</p>
+                                <p class="text-xs text-slate-400 mt-1">PDF, PNG, JPG, JPEG 형식 지원 (스캔본 자동 OCR 적용)</p>
                             </div>
                         </div>
                     </div>
@@ -234,34 +234,34 @@
         // Data State
         let records = [];
         const COUNTRY_MAP = {
-            "CN": "중국", "PRC": "중국", "CHN": "중국", "CHINA": "중국", "중화인민공화국": "중국",
-            "US": "미국", "USA": "미국", "UNITED STATES": "미국", "미합중국": "미국",
-            "JP": "일본", "JPN": "일본", "JAPAN": "일본",
-            "VN": "베트남", "VNM": "베트남", "VIETNAM": "베트남",
-            "DE": "독일", "DEU": "독일", "GERMANY": "독일",
-            "GB": "영국", "GBR": "영국", "UK": "영국", "UNITED KINGDOM": "영국",
-            "SG": "싱가포르", "SGP": "싱가포르", "SINGAPORE": "싱가포르",
-            "TW": "대만", "TWN": "대만", "TAIWAN": "대만",
-            "HK": "홍콩", "HKG": "홍콩", "HONG KONG": "홍콩",
-            "IN": "인도", "IND": "인도", "INDIA": "인도",
-            "ID": "인도네시아", "IDN": "인도네시아", "INDONESIA": "인도네시아",
-            "TH": "태국", "THA": "태국", "THAILAND": "태국",
-            "MY": "말레이시아", "MYS": "말레이시아", "MALAYSIA": "말레이시아",
-            "AU": "호주", "AUS": "호주", "AUSTRALIA": "호주",
-            "CA": "캐나다", "CAN": "캐나다", "CANADA": "캐나다",
-            "MX": "멕시코", "MEX": "멕시코", "MEXICO": "멕시코",
-            "BR": "브라질", "BRA": "브라질", "BRAZIL": "브라질",
-            "FR": "프랑스", "FRA": "프랑스", "FRANCE": "프랑스",
-            "IT": "이탈리아", "ITA": "이탈리아", "ITALY": "이탈리아",
-            "NL": "네덜란드", "NLD": "네덜란드", "NETHERLANDS": "네덜란드",
-            "PH": "필리핀", "PHL": "필리핀", "PHILIPPINES": "필리핀",
-            "RU": "러시아", "RUS": "러시아", "RUSSIA": "러시아",
-            "ES": "스페인", "ESP": "스페인", "SPAIN": "스페인",
-            "CH": "스위스", "CHE": "스위스", "SWITZERLAND": "스위스",
-            "AE": "아랍에미리트", "ARE": "아랍에미리트", "UAE": "아랍에미리트",
-            "SA": "사우디아라비아", "SAU": "사우디아라비아", "SAUDI ARABIA": "사우디아라비아",
-            "PL": "폴란드", "POL": "폴란드", "POLAND": "폴란드",
-            "TR": "튀르키예", "TUR": "튀르키예", "TURKEY": "튀르키예"
+            "CN": "중국", "PRC": "중국", "CHN": "중국", "CHINA": "중국", "중화인민공화국": "중국", "중국": "중국",
+            "US": "미국", "USA": "미국", "UNITED STATES": "미국", "미합중국": "미국", "미국": "미국",
+            "JP": "일본", "JPN": "일본", "JAPAN": "일본", "일본": "일본",
+            "VN": "베트남", "VNM": "베트남", "VIETNAM": "베트남", "베트남": "베트남",
+            "DE": "독일", "DEU": "독일", "GERMANY": "독일", "독일": "독일",
+            "GB": "영국", "GBR": "영국", "UK": "영국", "UNITED KINGDOM": "영국", "영국": "영국",
+            "SG": "싱가포르", "SGP": "싱가포르", "SINGAPORE": "싱가포르", "싱가포르": "싱가포르",
+            "TW": "대만", "TWN": "대만", "TAIWAN": "대만", "대만": "대만",
+            "HK": "홍콩", "HKG": "홍콩", "HONG KONG": "홍콩", "홍콩": "홍콩",
+            "IN": "인도", "IND": "인도", "INDIA": "인도", "인도": "인도",
+            "ID": "인도네시아", "IDN": "인도네시아", "INDONESIA": "인도네시아", "인도네시아": "인도네시아",
+            "TH": "태국", "THA": "태국", "THAILAND": "태국", "태국": "태국",
+            "MY": "말레이시아", "MYS": "말레이시아", "MALAYSIA": "말레이시아", "말레이시아": "말레이시아",
+            "AU": "호주", "AUS": "호주", "AUSTRALIA": "호주", "호주": "호주",
+            "CA": "캐나다", "CAN": "캐나다", "CANADA": "캐나다", "캐나다": "캐나다",
+            "MX": "멕시코", "MEX": "멕시코", "MEXICO": "멕시코", "멕시코": "멕시코",
+            "BR": "브라질", "BRA": "브라질", "BRAZIL": "브라질", "브라질": "브라질",
+            "FR": "프랑스", "FRA": "프랑스", "FRANCE": "프랑스", "프랑스": "프랑스",
+            "IT": "이탈리아", "ITA": "이탈리아", "ITALY": "이탈리아", "이탈리아": "이탈리아",
+            "NL": "네덜란드", "NLD": "네덜란드", "NETHERLANDS": "네덜란드", "네덜란드": "네덜란드",
+            "PH": "필리핀", "PHL": "필리핀", "PHILIPPINES": "필리핀", "필리핀": "필리핀",
+            "RU": "러시아", "RUS": "러시아", "RUSSIA": "러시아", "러시아": "러시아",
+            "ES": "스페인", "ESP": "스페인", "SPAIN": "스페인", "스페인": "스페인",
+            "CH": "스위스", "CHE": "스위스", "SWITZERLAND": "스위스", "스위스": "스위스",
+            "AE": "아랍에미리트", "ARE": "아랍에미리트", "UAE": "아랍에미리트", "아랍에미리트": "아랍에미리트",
+            "SA": "사우디아라비아", "SAU": "사우디아라비아", "사우디아라비아": "사우디아라비아",
+            "PL": "폴란드", "POL": "폴란드", "POLAND": "폴란드", "폴란드": "폴란드",
+            "TR": "튀르키예", "TUR": "튀르키예", "TURKEY": "튀르키예", "튀르키예": "튀르키예"
         };
 
         // Built-in UNIPASS Samples
@@ -304,19 +304,50 @@
             }
         ];
 
+        // Clean Company Name (Removes table tokens like PRC, 인천항, (항공사))
+        function cleanCompanyName(raw) {
+            if (!raw) return "";
+            // 1. Strip headers
+            let clean = raw.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*(?:수출대행자|수출화주|수출자|상호|업체명|신청인)\s*[:：]?/g, "").trim();
+
+            // 2. Exact (주)기업명 match
+            const mPref = clean.match(/(\((?:주|유|사|재|합|합자)\)\s*[가-힣A-Za-z0-9]+)/);
+            if (mPref) {
+                let cand = mPref[1].replace(/\s+/g, '');
+                cand = cand.replace(/레이선$/, "레이션");
+                return cand;
+            }
+
+            // 3. Exact 기업명 주식회사 match
+            const mSuff = clean.match(/([가-힣A-Za-z0-9]{2,}\s*(?:주식회사|유한회사|\((?:주|유)\)))/);
+            if (mSuff) {
+                return mSuff[1].trim();
+            }
+
+            // 4. Discard trailing table headers
+            const stopWords = ["통관고유부호", "수출자구분", "목적국", "적재항", "선박회사", "선박", "항공사", "PRC", "CN", "US", "USA", "인천항", "부산항", "출항예정일자", "적재예정보세구역", "주소", "대표자", "소재지", "사업자등록번호", "정보", "현황"];
+            for (let sw of stopWords) {
+                if (clean.includes(sw)) {
+                    clean = clean.split(sw)[0].trim();
+                }
+            }
+            clean = clean.replace(/[()（）:;_\-/]+$/g, "").replace(/레이선$/, "레이션").trim();
+            return clean;
+        }
+
         // Normalization Helpers
         function normalizeCountry(raw) {
             if (!raw) return "기타";
             const clean = raw.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*[:：]?/g, "").trim();
             const tokens = clean.replace(/[()（）:;_\-/]+/g, " ").trim().toUpperCase().split(/\s+/);
+            
             for (let t of tokens) {
                 if (COUNTRY_MAP[t]) return COUNTRY_MAP[t];
             }
             for (let [k, v] of Object.entries(COUNTRY_MAP)) {
                 if (clean.includes(v) || tokens.includes(k) || clean.toUpperCase() === k) return v;
             }
-            const hangul = clean.replace(/[^가-힣]/g, "");
-            return hangul.length >= 2 && !["국가명","목적국","수출국가","정보","현황","기타"].includes(hangul) ? hangul : "미확인국가";
+            return "미확인국가";
         }
 
         function normalizeMonth(raw) {
@@ -331,9 +362,18 @@
         function normalizeAmount(raw) {
             if (typeof raw === 'number') return raw;
             if (!raw) return 0;
-            const str = raw.toString();
+            const str = raw.toString().trim();
+
             const dollarMatch = str.match(/\$\s*([\d,]+(?:\.\d+)?)/);
             if (dollarMatch) return parseFloat(dollarMatch[1].replace(/,/g, ''));
+
+            const usdMatch = str.match(/USD\s*([\d,]+(?:\.\d+)?)/i);
+            if (usdMatch) return parseFloat(usdMatch[1].replace(/,/g, ''));
+
+            // OCR symbol correction (e.g. 823,202 or 523,202 -> 23202)
+            const ocrDollarMatch = str.match(/^[85Ss]\s*([1-9]\d{1,2}(?:,\d{3})+(?:\.\d+)?)/);
+            if (ocrDollarMatch) return parseFloat(ocrDollarMatch[1].replace(/,/g, ''));
+
             const matches = str.match(/[\d,]+(?:\.\d+)?/g);
             if (!matches) return 0;
             for (let i = matches.length - 1; i >= 0; i--) {
@@ -366,44 +406,68 @@
             let month = "2024-01";
             let amount = 0;
 
+            // 1. Global Entity Extraction for Company Name
+            const mPref = text.match(/(\((?:주|유|사|재|합|합자)\)\s*[가-힣A-Za-z0-9]+)/);
+            if (mPref) {
+                const cleaned = cleanCompanyName(mPref[1]);
+                if (cleaned && !["통관", "대표", "소재지", "정보"].some(h => cleaned.includes(h))) {
+                    company = cleaned;
+                }
+            }
+
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 if ((line.startsWith("[") && line.endsWith("]")) || line.includes("정보]") || line.includes("현황]")) continue;
 
-                // 1. Company: 2. 수출대행자 / ② 수출대행자 / 2 수출대행자
-                if (company === "(주)미상기업" && (line.includes("수출대행자") || line.includes("②") || line.includes("(2)상호") || line.includes("상호") || line.includes("2. 수출대행자") || line.includes("2 수출대행자"))) {
-                    let cand = line.includes(":") ? line.split(":")[1].trim() : line.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*(?:수출대행자|상호)\s*/, "").trim();
-                    cand = cand.replace(/^(?:수출대행자|상호)\s*[:：]?/, "").split(/\(통관|\(대표|\(사업자/)[0].trim();
-                    if (cand.length >= 2 && !["통관고유부호","정보","소재지","수출자구분"].some(h => cand.includes(h))) {
+                // 1-2. Company fallback: 2. 수출대행자 / ② 수출대행자
+                if (company === "(주)미상기업" && (line.includes("수출대행자") || line.includes("②") || line.includes("(2)상호") || line.includes("수출화주") || line.includes("상호") || line.includes("2. 수출대행자") || line.includes("2 수출대행자"))) {
+                    let cand = cleanCompanyName(line);
+                    if (cand.length >= 2 && !["통관", "대표", "소재지"].some(h => cand.includes(h))) {
                         company = cand;
                     } else if (i + 1 < lines.length) {
-                        let nextLine = lines[i+1].replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*/, "").trim();
-                        if (nextLine.length >= 2 && !["통관고유부호","대표자","소재지"].some(h => nextLine.includes(h))) {
+                        let nextLine = cleanCompanyName(lines[i+1]);
+                        if (nextLine.length >= 2 && !["통관", "대표", "소재지"].some(h => nextLine.includes(h))) {
                             company = nextLine;
                         }
                     }
                 }
 
-                // 2. Country: 13. 목적국 / ⑬ 목적국 / 13 목적국
+                // 2. Country: 13. 목적국 / ⑬ 목적국 / 13 목적국 (Search current & next 2 lines)
                 if (country === "기타" && (line.includes("목적국") || line.includes("⑬") || line.includes("13. 목적국") || line.includes("13 목적국") || line.includes("수출국가"))) {
-                    let cand = line.includes(":") ? line.split(":")[1].trim() : line.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*/, "").trim();
-                    cand = cand.split(/[⑭⑮㉒㊺㊽㊿]|적재항|선박/)[0].trim();
-                    const cNorm = normalizeCountry(cand);
+                    const searchScope = lines.slice(i, Math.min(i + 3, lines.length)).join(" ");
+                    const cNorm = normalizeCountry(searchScope);
                     if (cNorm !== "기타" && cNorm !== "미확인국가") country = cNorm;
                 }
 
                 // 3. Month: 57. 신고수리일자 / 57 신고수리일자 / ㊿ 신고수리일자
                 if (month === "2024-01" && (line.includes("신고수리일자") || line.includes("수리일자") || line.includes("실적연월") || line.includes("㊿") || line.includes("57.") || line.includes("57 "))) {
                     month = normalizeMonth(line);
+                    if (month === "2024-01" && i + 1 < lines.length) {
+                        month = normalizeMonth(lines[i+1]);
+                    }
                 }
 
                 // 4. Amount single line: 45. 총신고가격(FOB) $23,202
                 if (amount === 0 && (line.includes("총신고가격") || line.includes("45.") || line.includes("45 ") || line.includes("㊺") || line.includes("결제금액"))) {
-                    if (line.includes("$") || line.toUpperCase().includes("USD")) {
+                    if (line.includes("$") || line.toUpperCase().includes("USD") || /^[85Ss]\s*\d/.test(line)) {
                         const val = normalizeAmount(line);
                         if (val > 0) amount = val;
+                    } else if (i + 1 < lines.length) {
+                        const valNext = normalizeAmount(lines[i+1]);
+                        if (valNext > 0) amount = valNext;
+                    }
+                }
+            }
+
+            // 2차 Country Scan
+            if (country === "기타") {
+                const tokens = text.toUpperCase().replace(/[()（）:;_\-/]+/g, " ").split(/\s+/);
+                for (let t of tokens) {
+                    if (["CN", "PRC", "US", "USA", "JP", "JPN", "VN", "DE", "GB", "SG", "TW", "HK"].includes(t)) {
+                        country = COUNTRY_MAP[t];
+                        break;
                     }
                 }
             }
@@ -644,7 +708,7 @@
 
             for (let i = 0; i < total; i++) {
                 const file = files[i];
-                progressStatus.textContent = `[${i+1}/${total}] '${file.name}' OCR 및 서식 분석 중...`;
+                progressStatus.textContent = `[${i+1}/${total}] '${file.name}' OCR 및 지능형 서식 분석 중...`;
                 const percent = Math.round(((i + 0.5) / total) * 100);
                 progressBar.style.width = `${percent}%`;
                 progressPercent.textContent = `${percent}%`;
