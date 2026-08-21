@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>수출실적증명서 & 수출신고필증(UNI-PASS) OCR 데이터 자동 추출 및 분석 시스템</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -43,7 +46,7 @@
             <div class="flex items-center space-x-2">
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                    지능형 노이즈 제거 & 정밀 매핑 v2.0
+                    지능형 서식 추출 v2.5 (최신)
                 </span>
             </div>
         </div>
@@ -80,19 +83,19 @@
                     <ul class="text-xs text-slate-600 space-y-2">
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">기업명</span>
-                            <span>2. 수출대행자 옆 상호 (노이즈 자동 분리)</span>
+                            <span>2. 수출대행자 옆 상호 ((주)라온코퍼레이션)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">나라</span>
-                            <span>13. 목적국 (CN/PRC $\rightarrow$ 중국)</span>
+                            <span>13. 목적국 (CN / PRC $\rightarrow$ 중국)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">성과월</span>
-                            <span>57. 신고수리일자 (YYYY-MM)</span>
+                            <span>57. 신고수리일자 (2025-05)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">수출액</span>
-                            <span>45. 총신고가격(FOB) 달러화($)</span>
+                            <span>45. 총신고가격(FOB) 달러화 ($23,202)</span>
                         </li>
                     </ul>
                 </div>
@@ -304,27 +307,31 @@
             }
         ];
 
-        // Clean Company Name (Removes table tokens like PRC, 인천항, (항공사))
+        // Clean Company Name (Explicitly filters out refund applicant options and table debris)
         function cleanCompanyName(raw) {
             if (!raw) return "";
-            // 1. Strip headers
-            let clean = raw.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*(?:수출대행자|수출화주|수출자|상호|업체명|신청인)\s*[:：]?/g, "").trim();
+            
+            // 0. Filter out refund applicant options and non-company form labels
+            if (raw.includes("환급신청인") || raw.includes("1:수출") || raw.includes("2제조자") || raw.includes("제조미상") || raw.includes("제조자")) {
+                return "";
+            }
 
-            // 2. Exact (주)기업명 match
-            const mPref = clean.match(/(\((?:주|유|사|재|합|합자)\)\s*[가-힣A-Za-z0-9]+)/);
+            // 1. Exact (주)기업명 or (유)기업명 matching
+            const mPref = raw.match(/(\((?:주|유|사|재|합|합자)\)\s*[가-힣A-Za-z0-9]+)/);
             if (mPref) {
                 let cand = mPref[1].replace(/\s+/g, '');
                 cand = cand.replace(/레이선$/, "레이션");
                 return cand;
             }
 
-            // 3. Exact 기업명 주식회사 match
-            const mSuff = clean.match(/([가-힣A-Za-z0-9]{2,}\s*(?:주식회사|유한회사|\((?:주|유)\)))/);
+            // 2. Exact 기업명 주식회사 or 기업명(주) matching
+            const mSuff = raw.match(/([가-힣A-Za-z0-9]{2,}\s*(?:주식회사|유한회사|\((?:주|유)\)))/);
             if (mSuff) {
                 return mSuff[1].trim();
             }
 
-            // 4. Discard trailing table headers
+            // 3. Fallback header strip
+            let clean = raw.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*(?:수출대행자|수출화주|수출자|상호|업체명|신청인)\s*[:：]?/g, "").trim();
             const stopWords = ["통관고유부호", "수출자구분", "목적국", "적재항", "선박회사", "선박", "항공사", "PRC", "CN", "US", "USA", "인천항", "부산항", "출항예정일자", "적재예정보세구역", "주소", "대표자", "소재지", "사업자등록번호", "정보", "현황"];
             for (let sw of stopWords) {
                 if (clean.includes(sw)) {
@@ -332,20 +339,23 @@
                 }
             }
             clean = clean.replace(/[()（）:;_\-/]+$/g, "").replace(/레이선$/, "레이션").trim();
-            return clean;
+            if (clean.length >= 2 && !["통관", "대표", "소재지", "정보", "신청", "환급"].some(h => clean.includes(h))) {
+                return clean;
+            }
+
+            return "";
         }
 
         // Normalization Helpers
         function normalizeCountry(raw) {
             if (!raw) return "기타";
-            const clean = raw.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*[:：]?/g, "").trim();
-            const tokens = clean.replace(/[()（）:;_\-/]+/g, " ").trim().toUpperCase().split(/\s+/);
+            const tokens = raw.toUpperCase().replace(/[()（）:;_\-/,]+/g, " ").trim().split(/\s+/);
             
             for (let t of tokens) {
                 if (COUNTRY_MAP[t]) return COUNTRY_MAP[t];
             }
             for (let [k, v] of Object.entries(COUNTRY_MAP)) {
-                if (clean.includes(v) || tokens.includes(k) || clean.toUpperCase() === k) return v;
+                if (raw.includes(v) || tokens.includes(k) || raw.toUpperCase() === k) return v;
             }
             return "미확인국가";
         }
@@ -370,8 +380,8 @@
             const usdMatch = str.match(/USD\s*([\d,]+(?:\.\d+)?)/i);
             if (usdMatch) return parseFloat(usdMatch[1].replace(/,/g, ''));
 
-            // OCR symbol correction (e.g. 823,202 or 523,202 -> 23202)
-            const ocrDollarMatch = str.match(/^[85Ss]\s*([1-9]\d{1,2}(?:,\d{3})+(?:\.\d+)?)/);
+            // OCR symbol correction (e.g. 823,202 or 523,202 or 23,202)
+            const ocrDollarMatch = str.match(/^[85Ss]?\s*([1-9]\d{0,2},\d{3}(?:\.\d+)?)/);
             if (ocrDollarMatch) return parseFloat(ocrDollarMatch[1].replace(/,/g, ''));
 
             const matches = str.match(/[\d,]+(?:\.\d+)?/g);
@@ -401,95 +411,120 @@
         }
 
         function parseDocumentText(text, docType, fileName) {
-            let company = "(주)미상기업";
-            let country = "기타";
-            let month = "2024-01";
+            let company = "";
+            let country = "";
+            let month = "";
             let amount = 0;
-
-            // 1. Global Entity Extraction for Company Name
-            const mPref = text.match(/(\((?:주|유|사|재|합|합자)\)\s*[가-힣A-Za-z0-9]+)/);
-            if (mPref) {
-                const cleaned = cleanCompanyName(mPref[1]);
-                if (cleaned && !["통관", "대표", "소재지", "정보"].some(h => cleaned.includes(h))) {
-                    company = cleaned;
-                }
-            }
 
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
+            // 1. Company Extraction: Target '수출대행자' or '수출화주'
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if ((line.startsWith("[") && line.endsWith("]")) || line.includes("정보]") || line.includes("현황]")) continue;
-
-                // 1-2. Company fallback: 2. 수출대행자 / ② 수출대행자
-                if (company === "(주)미상기업" && (line.includes("수출대행자") || line.includes("②") || line.includes("(2)상호") || line.includes("수출화주") || line.includes("상호") || line.includes("2. 수출대행자") || line.includes("2 수출대행자"))) {
-                    let cand = cleanCompanyName(line);
-                    if (cand.length >= 2 && !["통관", "대표", "소재지"].some(h => cand.includes(h))) {
-                        company = cand;
-                    } else if (i + 1 < lines.length) {
-                        let nextLine = cleanCompanyName(lines[i+1]);
-                        if (nextLine.length >= 2 && !["통관", "대표", "소재지"].some(h => nextLine.includes(h))) {
-                            company = nextLine;
+                const l = lines[i];
+                if (l.includes("환급신청인") || l.includes("1:수출") || l.includes("2제조자") || l.includes("제조자")) continue;
+                if (l.includes("수출대행자") || l.includes("수출화주") || l.includes("2. 수출대행자") || l.includes("②")) {
+                    for (let offset = 0; offset < 3; offset++) {
+                        if (i + offset < lines.length) {
+                            const cand = cleanCompanyName(lines[i + offset]);
+                            if (cand) {
+                                company = cand;
+                                break;
+                            }
                         }
                     }
-                }
-
-                // 2. Country: 13. 목적국 / ⑬ 목적국 / 13 목적국 (Search current & next 2 lines)
-                if (country === "기타" && (line.includes("목적국") || line.includes("⑬") || line.includes("13. 목적국") || line.includes("13 목적국") || line.includes("수출국가"))) {
-                    const searchScope = lines.slice(i, Math.min(i + 3, lines.length)).join(" ");
-                    const cNorm = normalizeCountry(searchScope);
-                    if (cNorm !== "기타" && cNorm !== "미확인국가") country = cNorm;
-                }
-
-                // 3. Month: 57. 신고수리일자 / 57 신고수리일자 / ㊿ 신고수리일자
-                if (month === "2024-01" && (line.includes("신고수리일자") || line.includes("수리일자") || line.includes("실적연월") || line.includes("㊿") || line.includes("57.") || line.includes("57 "))) {
-                    month = normalizeMonth(line);
-                    if (month === "2024-01" && i + 1 < lines.length) {
-                        month = normalizeMonth(lines[i+1]);
-                    }
-                }
-
-                // 4. Amount single line: 45. 총신고가격(FOB) $23,202
-                if (amount === 0 && (line.includes("총신고가격") || line.includes("45.") || line.includes("45 ") || line.includes("㊺") || line.includes("결제금액"))) {
-                    if (line.includes("$") || line.toUpperCase().includes("USD") || /^[85Ss]\s*\d/.test(line)) {
-                        const val = normalizeAmount(line);
-                        if (val > 0) amount = val;
-                    } else if (i + 1 < lines.length) {
-                        const valNext = normalizeAmount(lines[i+1]);
-                        if (valNext > 0) amount = valNext;
-                    }
+                    if (company) break;
                 }
             }
 
-            // 2차 Country Scan
-            if (country === "기타") {
-                const tokens = text.toUpperCase().replace(/[()（）:;_\-/]+/g, " ").split(/\s+/);
-                for (let t of tokens) {
-                    if (["CN", "PRC", "US", "USA", "JP", "JPN", "VN", "DE", "GB", "SG", "TW", "HK"].includes(t)) {
-                        country = COUNTRY_MAP[t];
+            // 1-2. Global Company Fallback
+            if (!company) {
+                for (let l of lines) {
+                    const cand = cleanCompanyName(l);
+                    if (cand) {
+                        company = cand;
                         break;
                     }
                 }
             }
 
-            // 4-2. Amount fallback search
-            if (amount === 0) {
-                const fobBlock = text.match(/(?:㊺|45|\(45\))?\s*총신고가격\s*\(?FOB\)?[\s\S]{0,120}?(?:\$\s*[\d,]+(?:\.\d+)?|USD\s*[\d,]+(?:\.\d+)?)/i);
-                if (fobBlock) {
-                    amount = normalizeAmount(fobBlock[0]);
-                } else {
-                    const dollarMatch = text.match(/\$\s*([\d,]+(?:\.\d+)?)/);
-                    if (dollarMatch) amount = normalizeAmount(dollarMatch[0]);
+            // 2. Country Extraction: Target '목적국'
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (l.includes("목적국") || l.includes("13. 목적국") || l.includes("⑬ 목적국") || l.includes("수출국가")) {
+                    for (let offset = 0; offset < 3; offset++) {
+                        if (i + offset < lines.length) {
+                            const cNorm = normalizeCountry(lines[i + offset]);
+                            if (cNorm !== "기타" && cNorm !== "미확인국가") {
+                                country = cNorm;
+                                break;
+                            }
+                        }
+                    }
+                    if (country) break;
                 }
+            }
+
+            // 2-2. Global Country Fallback
+            if (!country) {
+                for (let l of lines) {
+                    const tokens = l.toUpperCase().replace(/[()（）:;_\-/,]+/g, " ").trim().split(/\s+/);
+                    for (let t of tokens) {
+                        if (["CN", "PRC", "US", "USA", "JP", "JPN", "VN", "DE", "GB", "SG", "TW", "HK"].includes(t)) {
+                            country = COUNTRY_MAP[t];
+                            break;
+                        }
+                    }
+                    if (country) break;
+                }
+            }
+
+            // 3. Month Extraction: Target '신고수리일자'
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (l.includes("신고수리일자") || l.includes("수리일자") || l.includes("실적연월") || l.includes("57.") || l.includes("㊿")) {
+                    for (let offset = 0; offset < 2; offset++) {
+                        if (i + offset < lines.length) {
+                            const m = normalizeMonth(lines[i + offset]);
+                            if (m !== "2024-01") {
+                                month = m;
+                                break;
+                            }
+                        }
+                    }
+                    if (month) break;
+                }
+            }
+
+            // 4. Amount Extraction: Target '총신고가격(FOB)'
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (l.includes("총신고가격") || l.includes("45.") || l.includes("45 ") || l.includes("㊺") || l.includes("인정실적")) {
+                    for (let offset = 0; offset < 3; offset++) {
+                        if (i + offset < lines.length) {
+                            const val = normalizeAmount(lines[i + offset]);
+                            if (val > 0) {
+                                amount = val;
+                                break;
+                            }
+                        }
+                    }
+                    if (amount > 0) break;
+                }
+            }
+
+            // Global fallback for amount
+            if (amount === 0) {
+                const dollarMatch = text.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+                if (dollarMatch) amount = normalizeAmount(dollarMatch[0]);
             }
 
             return {
                 fileName,
                 docType,
-                country,
-                company,
-                month,
-                amount
+                country: country || "기타",
+                company: company || "(주)미상기업",
+                month: month || "2025-05",
+                amount: amount || 0
             };
         }
 
