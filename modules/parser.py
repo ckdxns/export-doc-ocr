@@ -27,7 +27,9 @@ class DocumentParser:
             return ""
 
         # 서식 안내/환급신청인/기타 비회사 문구 제외
-        if any(k in raw_name for k in ["환급신청인", "1:수출", "2제조자", "제조미상", "제조자", "물품소재지", "사업자등록번호", "세관", "신고자"]):
+        if any(k in raw_name for k in ["환급신청인", "1:수출", "2제조자", "제조미상", "제조자", "물품소재지", "사업자등록번호", "세관", "신고자", "정보]", "내역]"]):
+            return ""
+        if raw_name.startswith("[") and raw_name.endswith("]"):
             return ""
 
         # 1. '(주)기업명' or '(유)기업명'

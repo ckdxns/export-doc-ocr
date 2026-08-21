@@ -1,5 +1,5 @@
 """
-통합 테스트 스위트 (Pipeline Verification Test with UNIPASS Export Declarations)
+통합 테스트 스위트 (Pipeline Verification Test with Generic Synthetic Data)
 """
 import os
 import sys
@@ -18,43 +18,43 @@ from config import DOC_TYPE_PERFORMANCE, DOC_TYPE_DECLARATION, STANDARD_COLUMNS
 
 def test_custom_user_examples():
     """
-    사용자가 제시한 구체적 서식 사례 테스트:
-    - 2. 수출대행자 (주)라온코퍼레이션 -> (주)라온코퍼레이션
+    서식 사례 테스트:
+    - 2. 수출대행자 (주)한국글로벌 -> (주)한국글로벌
     - 13. 목적국 CN -> 중국
-    - 57. 신고수리일자 2025/05/06 -> 2025-05
-    - 45. 총신고가격(FOB) $23,202 -> 23202.0
+    - 57. 신고수리일자 2024/06/10 -> 2024-06
+    - 45. 총신고가격(FOB) $30,000 -> 30000.0
     """
     parser = DocumentParser()
 
     # Case 1: Dot-number notation
     text1 = """
     수출신고필증(적재전, 갑지)
-    2. 수출대행자 (주)라온코퍼레이션
+    2. 수출대행자 (주)한국글로벌
     13. 목적국 CN
-    45. 총신고가격(FOB) $23,202
-    57. 신고수리일자 2025/05/06
+    45. 총신고가격(FOB) $30,000
+    57. 신고수리일자 2024/06/10
     """
     res1 = parser.parse_export_declaration(text1)
-    assert res1["company"] == "(주)라온코퍼레이션", f"Got: {res1['company']}"
+    assert res1["company"] == "(주)한국글로벌", f"Got: {res1['company']}"
     assert res1["country"] == "중국", f"Got: {res1['country']}"
-    assert res1["month"] == "2025-05", f"Got: {res1['month']}"
-    assert res1["amount"] == 23202.0, f"Got: {res1['amount']}"
+    assert res1["month"] == "2024-06", f"Got: {res1['month']}"
+    assert res1["amount"] == 30000.0, f"Got: {res1['amount']}"
 
     # Case 2: Circled number notation (UNI-PASS authentic form)
     text2 = """
     수출신고필증(적재전, 갑지)
-    ② 수출대행자 (주)라온코퍼레이션
+    ② 수출대행자 (주)한국글로벌
     ⑬ 목적국 CN PRC
     ㊺ 총신고가격(FOB)
-        $ 23,202 (달러화)
-        ₩ 34,283,617 (원화)
-    ㊿ 신고수리일자 2025/05/06
+        $ 30,000 (달러화)
+        ₩ 39,000,000 (원화)
+    ㊿ 신고수리일자 2024/06/10
     """
     res2 = parser.parse_export_declaration(text2)
-    assert res2["company"] == "(주)라온코퍼레이션", f"Got: {res2['company']}"
+    assert res2["company"] == "(주)한국글로벌", f"Got: {res2['company']}"
     assert res2["country"] == "중국", f"Got: {res2['country']}"
-    assert res2["month"] == "2025-05", f"Got: {res2['month']}"
-    assert res2["amount"] == 23202.0, f"Got: {res2['amount']}"
+    assert res2["month"] == "2024-06", f"Got: {res2['month']}"
+    assert res2["amount"] == 30000.0, f"Got: {res2['amount']}"
 
     # Case 3: Country codes USA, JP, VN
     text3 = """
@@ -114,27 +114,27 @@ def test_full_pipeline_samples():
     for col in STANDARD_COLUMNS:
         assert col in df.columns
 
-    # 5. Company Total Calculation: (주)라온코퍼레이션 should have 23202 + 50000 = 73202
+    # 5. Company Total Calculation: (주)한국글로벌 should have 30000 + 50000 = 80000
     summary = processor.get_company_summary(df)
-    laon_summary = summary[summary["기업"] == "(주)라온코퍼레이션"]
-    assert len(laon_summary) == 1
-    assert laon_summary["총수출 성약액"].values[0] == 73202.0
+    global_summary = summary[summary["기업"] == "(주)한국글로벌"]
+    assert len(global_summary) == 1
+    assert global_summary["총수출 성약액"].values[0] == 80000.0
 
-    # 6. Filter by (주)라온코퍼레이션
-    filtered_laon = processor.filter_by_company(df, "(주)라온코퍼레이션")
-    assert len(filtered_laon) == 2
-    assert list(filtered_laon.columns) == STANDARD_COLUMNS
-    assert filtered_laon["수출액"].sum() == 73202.0
+    # 6. Filter by (주)한국글로벌
+    filtered_global = processor.filter_by_company(df, "(주)한국글로벌")
+    assert len(filtered_global) == 2
+    assert list(filtered_global.columns) == STANDARD_COLUMNS
+    assert filtered_global["수출액"].sum() == 80000.0
 
     # 7. Excel Generation & Validation
-    excel_bytes = processor.export_to_excel_bytes(filtered_laon, "(주)라온코퍼레이션")
+    excel_bytes = processor.export_to_excel_bytes(filtered_global, "(주)한국글로벌")
     assert len(excel_bytes) > 0
 
     read_df = pd.read_excel(io.BytesIO(excel_bytes))
     assert list(read_df.columns) == STANDARD_COLUMNS
     assert len(read_df) == 2
-    assert read_df["수출액"].sum() == 73202.0
-    print("[SUCCESS] All Pipeline Tests and Custom User Example Tests Passed!")
+    assert read_df["수출액"].sum() == 80000.0
+    print("[SUCCESS] All Pipeline Tests Passed!")
 
 if __name__ == "__main__":
     test_custom_user_examples()
