@@ -43,7 +43,7 @@
             <div class="flex items-center space-x-2">
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                    UNI-PASS 매핑 적용
+                    2.수출대행자 & 13.목적국 매핑 적용
                 </span>
             </div>
         </div>
@@ -75,24 +75,24 @@
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div class="flex items-center space-x-2 text-slate-800 font-bold text-sm">
                         <i data-lucide="info" class="w-4 h-4 text-slate-500"></i>
-                        <span>UNI-PASS 매핑 기준</span>
+                        <span>정밀 매핑 기준</span>
                     </div>
                     <ul class="text-xs text-slate-600 space-y-2">
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">기업명</span>
-                            <span>② 수출대행자 / (2)상호</span>
+                            <span>2. 수출대행자 옆 상호</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">나라</span>
-                            <span>⑬ 목적국 (CN, US 등)</span>
+                            <span>13. 목적국 (CN $\rightarrow$ 중국)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">성과월</span>
-                            <span>57 신고수리일자 (YYYY-MM)</span>
+                            <span>57. 신고수리일자 (YYYY-MM)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">수출액</span>
-                            <span>45 총신고가격(FOB) 달러화($)</span>
+                            <span>45. 총신고가격(FOB) 달러화($)</span>
                         </li>
                     </ul>
                 </div>
@@ -234,26 +234,34 @@
         // Data State
         let records = [];
         const COUNTRY_MAP = {
+            "CN": "중국", "PRC": "중국", "CHN": "중국", "CHINA": "중국", "중화인민공화국": "중국",
             "US": "미국", "USA": "미국", "UNITED STATES": "미국", "미합중국": "미국",
-            "CN": "중국", "CHINA": "중국", "PRC": "중국",
-            "JP": "일본", "JAPAN": "일본",
-            "VN": "베트남", "VIETNAM": "베트남",
-            "DE": "독일", "GERMANY": "독일",
-            "GB": "영국", "UK": "영국", "UNITED KINGDOM": "영국",
-            "SG": "싱가포르", "SINGAPORE": "싱가포르",
-            "TW": "대만", "TAIWAN": "대만",
-            "IN": "인도", "INDIA": "인도",
-            "ID": "인도네시아", "INDONESIA": "인도네시아",
-            "TH": "태국", "THAILAND": "태국",
-            "MY": "말레이시아", "MALAYSIA": "말레이시아",
-            "AU": "호주", "AUSTRALIA": "호주",
-            "CA": "캐나다", "CANADA": "캐나다",
-            "HK": "홍콩", "HONG KONG": "홍콩",
-            "MX": "멕시코", "MEXICO": "멕시코",
-            "BR": "브라질", "BRAZIL": "브라질",
-            "FR": "프랑스", "FRANCE": "프랑스",
-            "IT": "이탈리아", "ITALY": "이탈리아",
-            "NL": "네덜란드", "NETHERLANDS": "네덜란드"
+            "JP": "일본", "JPN": "일본", "JAPAN": "일본",
+            "VN": "베트남", "VNM": "베트남", "VIETNAM": "베트남",
+            "DE": "독일", "DEU": "독일", "GERMANY": "독일",
+            "GB": "영국", "GBR": "영국", "UK": "영국", "UNITED KINGDOM": "영국",
+            "SG": "싱가포르", "SGP": "싱가포르", "SINGAPORE": "싱가포르",
+            "TW": "대만", "TWN": "대만", "TAIWAN": "대만",
+            "HK": "홍콩", "HKG": "홍콩", "HONG KONG": "홍콩",
+            "IN": "인도", "IND": "인도", "INDIA": "인도",
+            "ID": "인도네시아", "IDN": "인도네시아", "INDONESIA": "인도네시아",
+            "TH": "태국", "THA": "태국", "THAILAND": "태국",
+            "MY": "말레이시아", "MYS": "말레이시아", "MALAYSIA": "말레이시아",
+            "AU": "호주", "AUS": "호주", "AUSTRALIA": "호주",
+            "CA": "캐나다", "CAN": "캐나다", "CANADA": "캐나다",
+            "MX": "멕시코", "MEX": "멕시코", "MEXICO": "멕시코",
+            "BR": "브라질", "BRA": "브라질", "BRAZIL": "브라질",
+            "FR": "프랑스", "FRA": "프랑스", "FRANCE": "프랑스",
+            "IT": "이탈리아", "ITA": "이탈리아", "ITALY": "이탈리아",
+            "NL": "네덜란드", "NLD": "네덜란드", "NETHERLANDS": "네덜란드",
+            "PH": "필리핀", "PHL": "필리핀", "PHILIPPINES": "필리핀",
+            "RU": "러시아", "RUS": "러시아", "RUSSIA": "러시아",
+            "ES": "스페인", "ESP": "스페인", "SPAIN": "스페인",
+            "CH": "스위스", "CHE": "스위스", "SWITZERLAND": "스위스",
+            "AE": "아랍에미리트", "ARE": "아랍에미리트", "UAE": "아랍에미리트",
+            "SA": "사우디아라비아", "SAU": "사우디아라비아", "SAUDI ARABIA": "사우디아라비아",
+            "PL": "폴란드", "POL": "폴란드", "POLAND": "폴란드",
+            "TR": "튀르키예", "TUR": "튀르키예", "TURKEY": "튀르키예"
         };
 
         // Built-in UNIPASS Samples
@@ -299,15 +307,16 @@
         // Normalization Helpers
         function normalizeCountry(raw) {
             if (!raw) return "기타";
-            const tokens = raw.replace(/[()（）:;_-]+/g, " ").trim().toUpperCase().split(/\s+/);
+            const clean = raw.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*[:：]?/g, "").trim();
+            const tokens = clean.replace(/[()（）:;_\-/]+/g, " ").trim().toUpperCase().split(/\s+/);
             for (let t of tokens) {
                 if (COUNTRY_MAP[t]) return COUNTRY_MAP[t];
             }
             for (let [k, v] of Object.entries(COUNTRY_MAP)) {
-                if (raw.includes(v) || tokens.includes(k)) return v;
+                if (clean.includes(v) || tokens.includes(k) || clean.toUpperCase() === k) return v;
             }
-            const hangul = raw.replace(/[^가-힣]/g, "");
-            return hangul.length >= 2 && !["국가명","목적국","수출국가","정보","현황"].includes(hangul) ? hangul : "미확인국가";
+            const hangul = clean.replace(/[^가-힣]/g, "");
+            return hangul.length >= 2 && !["국가명","목적국","수출국가","정보","현황","기타"].includes(hangul) ? hangul : "미확인국가";
         }
 
         function normalizeMonth(raw) {
@@ -363,8 +372,8 @@
                 const line = lines[i];
                 if ((line.startsWith("[") && line.endsWith("]")) || line.includes("정보]") || line.includes("현황]")) continue;
 
-                // 1. Company: ② 수출대행자 / (2)상호
-                if (company === "(주)미상기업" && (line.includes("수출대행자") || line.includes("②") || line.includes("(2)상호") || line.includes("상호") || line.includes("수출자"))) {
+                // 1. Company: 2. 수출대행자 / ② 수출대행자 / 2 수출대행자
+                if (company === "(주)미상기업" && (line.includes("수출대행자") || line.includes("②") || line.includes("(2)상호") || line.includes("상호") || line.includes("2. 수출대행자") || line.includes("2 수출대행자"))) {
                     let cand = line.includes(":") ? line.split(":")[1].trim() : line.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*(?:수출대행자|상호)\s*/, "").trim();
                     cand = cand.replace(/^(?:수출대행자|상호)\s*[:：]?/, "").split(/\(통관|\(대표|\(사업자/)[0].trim();
                     if (cand.length >= 2 && !["통관고유부호","정보","소재지","수출자구분"].some(h => cand.includes(h))) {
@@ -377,27 +386,37 @@
                     }
                 }
 
-                // 2. Country: ⑬ 목적국 / 목적국
-                if (country === "기타" && (line.includes("목적국") || line.includes("⑬") || line.includes("수출국가"))) {
+                // 2. Country: 13. 목적국 / ⑬ 목적국 / 13 목적국
+                if (country === "기타" && (line.includes("목적국") || line.includes("⑬") || line.includes("13. 목적국") || line.includes("13 목적국") || line.includes("수출국가"))) {
                     let cand = line.includes(":") ? line.split(":")[1].trim() : line.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*/, "").trim();
                     cand = cand.split(/[⑭⑮㉒㊺㊽㊿]|적재항|선박/)[0].trim();
                     const cNorm = normalizeCountry(cand);
                     if (cNorm !== "기타" && cNorm !== "미확인국가") country = cNorm;
                 }
 
-                // 3. Month: 57 신고수리일자 / ㊿ 신고수리일자
-                if (month === "2024-01" && (line.includes("신고수리일자") || line.includes("수리일자") || line.includes("실적연월") || line.includes("㊿"))) {
+                // 3. Month: 57. 신고수리일자 / 57 신고수리일자 / ㊿ 신고수리일자
+                if (month === "2024-01" && (line.includes("신고수리일자") || line.includes("수리일자") || line.includes("실적연월") || line.includes("㊿") || line.includes("57.") || line.includes("57 "))) {
                     month = normalizeMonth(line);
+                }
+
+                // 4. Amount single line: 45. 총신고가격(FOB) $23,202
+                if (amount === 0 && (line.includes("총신고가격") || line.includes("45.") || line.includes("45 ") || line.includes("㊺") || line.includes("결제금액"))) {
+                    if (line.includes("$") || line.toUpperCase().includes("USD")) {
+                        const val = normalizeAmount(line);
+                        if (val > 0) amount = val;
+                    }
                 }
             }
 
-            // 4. Amount: 45 총신고가격(FOB) 달러화
-            const fobBlock = text.match(/(?:㊺|45|\(45\))?\s*총신고가격\s*\(?FOB\)?[\s\S]{0,120}?(?:\$\s*[\d,]+(?:\.\d+)?|USD\s*[\d,]+(?:\.\d+)?)/i);
-            if (fobBlock) {
-                amount = normalizeAmount(fobBlock[0]);
-            } else {
-                const dollarMatch = text.match(/\$\s*([\d,]+(?:\.\d+)?)/);
-                if (dollarMatch) amount = normalizeAmount(dollarMatch[0]);
+            // 4-2. Amount fallback search
+            if (amount === 0) {
+                const fobBlock = text.match(/(?:㊺|45|\(45\))?\s*총신고가격\s*\(?FOB\)?[\s\S]{0,120}?(?:\$\s*[\d,]+(?:\.\d+)?|USD\s*[\d,]+(?:\.\d+)?)/i);
+                if (fobBlock) {
+                    amount = normalizeAmount(fobBlock[0]);
+                } else {
+                    const dollarMatch = text.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+                    if (dollarMatch) amount = normalizeAmount(dollarMatch[0]);
+                }
             }
 
             return {

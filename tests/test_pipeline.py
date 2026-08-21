@@ -16,6 +16,60 @@ from modules.data_processor import DataProcessor
 from modules.sample_generator import SampleGenerator
 from config import DOC_TYPE_PERFORMANCE, DOC_TYPE_DECLARATION, STANDARD_COLUMNS
 
+def test_custom_user_examples():
+    """
+    사용자가 제시한 구체적 서식 사례 테스트:
+    - 2. 수출대행자 (주)라온코퍼레이션 -> (주)라온코퍼레이션
+    - 13. 목적국 CN -> 중국
+    - 57. 신고수리일자 2025/05/06 -> 2025-05
+    - 45. 총신고가격(FOB) $23,202 -> 23202.0
+    """
+    parser = DocumentParser()
+
+    # Case 1: Dot-number notation
+    text1 = """
+    수출신고필증(적재전, 갑지)
+    2. 수출대행자 (주)라온코퍼레이션
+    13. 목적국 CN
+    45. 총신고가격(FOB) $23,202
+    57. 신고수리일자 2025/05/06
+    """
+    res1 = parser.parse_export_declaration(text1)
+    assert res1["company"] == "(주)라온코퍼레이션", f"Got: {res1['company']}"
+    assert res1["country"] == "중국", f"Got: {res1['country']}"
+    assert res1["month"] == "2025-05", f"Got: {res1['month']}"
+    assert res1["amount"] == 23202.0, f"Got: {res1['amount']}"
+
+    # Case 2: Circled number notation (UNI-PASS authentic form)
+    text2 = """
+    수출신고필증(적재전, 갑지)
+    ② 수출대행자 (주)라온코퍼레이션
+    ⑬ 목적국 CN PRC
+    ㊺ 총신고가격(FOB)
+        $ 23,202 (달러화)
+        ₩ 34,283,617 (원화)
+    ㊿ 신고수리일자 2025/05/06
+    """
+    res2 = parser.parse_export_declaration(text2)
+    assert res2["company"] == "(주)라온코퍼레이션", f"Got: {res2['company']}"
+    assert res2["country"] == "중국", f"Got: {res2['country']}"
+    assert res2["month"] == "2025-05", f"Got: {res2['month']}"
+    assert res2["amount"] == 23202.0, f"Got: {res2['amount']}"
+
+    # Case 3: Country codes USA, JP, VN
+    text3 = """
+    수출신고필증
+    2 수출대행자 (주)글로벌테크
+    13 목적국 US
+    45 총신고가격 $50,000
+    57 신고수리일자 2024-03-15
+    """
+    res3 = parser.parse_export_declaration(text3)
+    assert res3["company"] == "(주)글로벌테크"
+    assert res3["country"] == "미국"
+    assert res3["month"] == "2024-03"
+    assert res3["amount"] == 50000.0
+
 def test_full_pipeline_samples():
     classifier = DocumentClassifier()
     ocr = OCREngine()
@@ -80,7 +134,8 @@ def test_full_pipeline_samples():
     assert list(read_df.columns) == STANDARD_COLUMNS
     assert len(read_df) == 2
     assert read_df["수출액"].sum() == 73202.0
-    print("[SUCCESS] All Pipeline Tests Passed for UNIPASS specification!")
+    print("[SUCCESS] All Pipeline Tests and Custom User Example Tests Passed!")
 
 if __name__ == "__main__":
+    test_custom_user_examples()
     test_full_pipeline_samples()

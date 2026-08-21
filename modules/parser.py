@@ -22,28 +22,30 @@ class DocumentParser:
     def normalize_country(self, raw_country: str) -> str:
         """
         국가명 또는 국가 코드를 한글 표준 국가명으로 정규화합니다.
-        예: 'CN PRC' -> '중국', 'US USA' -> '미국', 'VN' -> '베트남'
+        예: '13. 목적국 CN' -> '중국', 'CN PRC' -> '중국', 'US' -> '미국', 'VN' -> '베트남'
         """
         if not raw_country:
             return "기타"
         
-        # 괄호 및 특수문자 제거 전 토큰 분리
-        tokens = re.split(r"[\s,()（）:;_-]+", raw_country.strip().upper())
+        # 1. 13 목적국, (13) 목적국 등의 접두어 제거
+        clean_text = re.sub(r"^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*[:：]?", "", raw_country).strip()
+
+        # 2. 괄호 및 특수문자 기준 토큰 분리 후 국가코드 매핑
+        tokens = re.split(r"[\s,()（）:;_\-/]+", clean_text.upper())
         for token in tokens:
+            token = token.strip()
             if not token:
                 continue
             if token in self.country_map:
                 return self.country_map[token]
-            for code, kr in self.country_map.items():
-                if token == code or token == kr:
-                    return kr
 
-        # 전체 문자열 내 포함 여부 확인
+        # 3. 전체 문자열 내 국가명/코드 포함 여부 확인
         for code, kr in self.country_map.items():
-            if kr in raw_country or f" {code} " in f" {raw_country.upper()} ":
+            if kr in clean_text or f" {code} " in f" {clean_text.upper()} " or clean_text.upper() == code:
                 return kr
 
-        hangul = re.sub(r"[^가-힣]", "", raw_country)
+        # 4. 순수 한글 국가명 확인
+        hangul = re.sub(r"[^가-힣]", "", clean_text)
         if hangul and hangul not in ["국가명", "목적국", "수출국가", "상대국", "적재항", "정보", "현황", "기타"]:
             return hangul
 
@@ -52,7 +54,7 @@ class DocumentParser:
     def normalize_month(self, raw_date: str) -> str:
         """
         날짜 문자열에서 연월(YYYY-MM)을 추출하여 표준화합니다.
-        예: '2025/05/06', '2025-05-06', '20250506', '2025.05' -> '2025-05'
+        예: '57 신고수리일자 2025/05/06' -> '2025-05'
         """
         if not raw_date:
             return "2024-01"
@@ -76,6 +78,7 @@ class DocumentParser:
     def normalize_amount(self, raw_amount: Any) -> float:
         """
         수출 금액에서 달러($) 기준 수치 금액을 실수(float)로 추출합니다.
+        예: '45 총신고가격(FOB) $23,202' -> 23202.0
         """
         if isinstance(raw_amount, (int, float)):
             return float(raw_amount)
@@ -115,11 +118,11 @@ class DocumentParser:
 
     def parse_export_declaration(self, text: str) -> Dict[str, Any]:
         """
-        [수출신고필증] 전용 파싱 로직 (관세청 UNI-PASS 양식 매핑)
-        - 기업명: 수출대행자 / (2)상호 / ② 수출대행자 옆 상호
-        - 나라: 목적국 / (13) 목적국 / ⑬ 목적국
-        - 성과월: 57 신고수리일자 / ㊿ 신고수리일자
-        - 수출액: 45 총신고가격(FOB) -> 달러 기준 숫자 정규화
+        [수출신고필증] 전용 파싱 로직
+        - 기업명: 2. 수출대행자 / 2 수출대행자 / ② 수출대행자 (ex: '2. 수출대행자 (주)라온코퍼레이션' -> '(주)라온코퍼레이션')
+        - 나라: 13. 목적국 / 13 목적국 / ⑬ 목적국 (ex: '13. 목적국 CN' -> '중국')
+        - 성과월: 57 신고수리일자 / ㊿ 신고수리일자 (ex: '57 신고수리일자 2025/05/06' -> '2025-05')
+        - 수출액: 45 총신고가격(FOB) -> 달러화 기준 숫자 정규화 (ex: '45. 총신고가격(FOB) $23,202' -> 23202.0)
         """
         result = {
             "doc_type": DOC_TYPE_DECLARATION,
@@ -137,8 +140,8 @@ class DocumentParser:
             if (line.startswith("[") and line.endswith("]")) or "정보]" in line or "현황]" in line:
                 continue
 
-            # 1. 기업명 (② 수출대행자 / (2)상호 / 수출대행자)
-            if not result["company"] and any(k in line for k in ["수출대행자", "②", "(2)상호", "(2) 상호", "2. 수출대행자"]):
+            # 1. 기업명: 2 수출대행자 / 2. 수출대행자 / ② 수출대행자
+            if not result["company"] and ("수출대행자" in line or "②" in line or "(2)상호" in line or re.search(r"\b2[.]?\s*수출", line)):
                 cand = line
                 if ":" in line:
                     cand = line.split(":", 1)[1].strip()
@@ -152,38 +155,46 @@ class DocumentParser:
                     result["company"] = cand
                     result["raw_fields"]["company"] = line
 
-            # 2. 나라 (⑬ 목적국 / (13) 목적국 / 목적국)
-            if not result["country"] and ("목적국" in line or "⑬" in line or "(13)" in line):
+            # 2. 나라: 13 목적국 / 13. 목적국 / ⑬ 목적국
+            if not result["country"] and ("목적국" in line or "⑬" in line or "(13)" in line or re.search(r"\b13[.]?\s*목적국", line)):
                 cand = line
                 if ":" in line:
                     cand = line.split(":", 1)[1].strip()
                 else:
                     cand = re.sub(r"^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*", "", cand).strip()
 
-                # 목적국 뒤의 다른 항목 분리 (예: ⑭ 적재항 등)
                 cand = re.split(r"[⑭⑮㉒㊺㊽㊿]|\(14\)|\(15\)|적재항|선박", cand)[0].strip()
                 c_norm = self.normalize_country(cand)
                 if c_norm not in ["기타", "미확인국가"]:
                     result["country"] = c_norm
                     result["raw_fields"]["country"] = line
 
-            # 3. 성과월 (57 신고수리일자 / ㊿ 신고수리일자 / 신고수리일자)
-            if not result["month"] and any(k in line for k in ["신고수리일자", "수리일자", "㊿", "57."]):
+            # 3. 성과월: 57 신고수리일자 / ㊿ 신고수리일자
+            if not result["month"] and any(k in line for k in ["신고수리일자", "수리일자", "㊿", "57.", "57 "]):
                 m_date = re.search(r"(\d{4}[-./년\s]+\d{1,2}(?:[-./일\s]+\d{1,2})?)", line)
                 if m_date:
                     result["month"] = self.normalize_month(m_date.group(1))
                     result["raw_fields"]["month"] = line
 
-        # 4. 수출액 (45 총신고가격(FOB) 달러화)
-        fob_block_match = re.search(r"(?:㊺|45|\(45\)|\(49\)|49)?\s*총신고가격\s*\(?FOB\)?[\s\S]{0,120}?(?:\$\s*[\d,]+(?:\.\d+)?|USD\s*[\d,]+(?:\.\d+)?)", text, re.IGNORECASE)
-        if fob_block_match:
-            result["amount"] = self.normalize_amount(fob_block_match.group(0))
-            result["raw_fields"]["amount"] = fob_block_match.group(0)
-        else:
-            m_amount = re.search(r"(?:총신고가격|결제금액)[\s\S]{0,60}?\$\s*([\d,]+(?:\.\d+)?)", text)
-            if m_amount:
-                result["amount"] = self.normalize_amount(m_amount.group(0))
-                result["raw_fields"]["amount"] = m_amount.group(0)
+            # 4. 수출액: 45 총신고가격(FOB) 한 줄 검색
+            if result["amount"] == 0.0 and any(k in line for k in ["총신고가격", "45.", "45 ", "㊺", "결제금액"]):
+                if "$" in line or "USD" in line.upper():
+                    val = self.normalize_amount(line)
+                    if val > 0:
+                        result["amount"] = val
+                        result["raw_fields"]["amount"] = line
+
+        # 4-2. 다중 줄 또는 블록 형태의 총신고가격(FOB) 달러화 탐색
+        if result["amount"] == 0.0:
+            fob_block_match = re.search(r"(?:㊺|45|\(45\)|\(49\)|49)?\s*총신고가격\s*\(?FOB\)?[\s\S]{0,120}?(?:\$\s*[\d,]+(?:\.\d+)?|USD\s*[\d,]+(?:\.\d+)?)", text, re.IGNORECASE)
+            if fob_block_match:
+                result["amount"] = self.normalize_amount(fob_block_match.group(0))
+                result["raw_fields"]["amount"] = fob_block_match.group(0)
+            else:
+                m_amount = re.search(r"(?:총신고가격|결제금액)[\s\S]{0,60}?\$\s*([\d,]+(?:\.\d+)?)", text)
+                if m_amount:
+                    result["amount"] = self.normalize_amount(m_amount.group(0))
+                    result["raw_fields"]["amount"] = m_amount.group(0)
 
         # Fallback 보완
         if not result["company"]:
