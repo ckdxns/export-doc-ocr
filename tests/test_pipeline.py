@@ -1,5 +1,5 @@
 """
-통합 테스트 스위트 (Pipeline Verification Test)
+통합 테스트 스위트 (Pipeline Verification Test with UNIPASS Export Declarations)
 """
 import os
 import sys
@@ -7,7 +7,6 @@ import io
 import pytest
 import pandas as pd
 
-# Add root directory to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from modules.ocr_engine import OCREngine
@@ -48,10 +47,10 @@ def test_full_pipeline_samples():
         record["file_name"] = file_name
         
         # Verify fields
-        assert record["company"] == expected["company"], f"Company mismatch in {file_name}"
-        assert record["country"] == expected["country"], f"Country mismatch in {file_name}"
-        assert record["month"] == expected["month"], f"Month mismatch in {file_name}"
-        assert record["amount"] == expected["amount"], f"Amount mismatch in {file_name}"
+        assert record["company"] == expected["company"], f"Company mismatch in {file_name}: got {record['company']}"
+        assert record["country"] == expected["country"], f"Country mismatch in {file_name}: got {record['country']}"
+        assert record["month"] == expected["month"], f"Month mismatch in {file_name}: got {record['month']}"
+        assert record["amount"] == expected["amount"], f"Amount mismatch in {file_name}: got {record['amount']}"
 
         parsed_records.append(record)
 
@@ -61,28 +60,27 @@ def test_full_pipeline_samples():
     for col in STANDARD_COLUMNS:
         assert col in df.columns
 
-    # 5. Company Total Calculation: (주)ABC should have 50000 + 30000 = 80000
+    # 5. Company Total Calculation: (주)라온코퍼레이션 should have 23202 + 50000 = 73202
     summary = processor.get_company_summary(df)
-    abc_summary = summary[summary["기업"] == "(주)ABC"]
-    assert len(abc_summary) == 1
-    assert abc_summary["총수출 성약액"].values[0] == 80000.0
+    laon_summary = summary[summary["기업"] == "(주)라온코퍼레이션"]
+    assert len(laon_summary) == 1
+    assert laon_summary["총수출 성약액"].values[0] == 73202.0
 
-    # 6. Filter by (주)ABC
-    filtered_abc = processor.filter_by_company(df, "(주)ABC")
-    assert len(filtered_abc) == 2
-    assert list(filtered_abc.columns) == STANDARD_COLUMNS
-    assert filtered_abc["수출액"].sum() == 80000.0
+    # 6. Filter by (주)라온코퍼레이션
+    filtered_laon = processor.filter_by_company(df, "(주)라온코퍼레이션")
+    assert len(filtered_laon) == 2
+    assert list(filtered_laon.columns) == STANDARD_COLUMNS
+    assert filtered_laon["수출액"].sum() == 73202.0
 
     # 7. Excel Generation & Validation
-    excel_bytes = processor.export_to_excel_bytes(filtered_abc, "(주)ABC")
+    excel_bytes = processor.export_to_excel_bytes(filtered_laon, "(주)라온코퍼레이션")
     assert len(excel_bytes) > 0
 
-    # Read back generated excel
     read_df = pd.read_excel(io.BytesIO(excel_bytes))
     assert list(read_df.columns) == STANDARD_COLUMNS
     assert len(read_df) == 2
-    assert read_df["수출액"].sum() == 80000.0
-    print("[SUCCESS] All Pipeline Tests Passed Successfully!")
+    assert read_df["수출액"].sum() == 73202.0
+    print("[SUCCESS] All Pipeline Tests Passed for UNIPASS specification!")
 
 if __name__ == "__main__":
     test_full_pipeline_samples()

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수출실적증명서 & 수출신고필증 OCR 데이터 자동 추출 및 분석 시스템</title>
+    <title>수출실적증명서 & 수출신고필증(UNI-PASS) OCR 데이터 자동 추출 및 분석 시스템</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PDF.js CDN -->
@@ -37,13 +37,13 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold text-slate-900 leading-tight">수출 문서 OCR 분석 & 성약액 산출 시스템</h1>
-                    <p class="text-xs text-slate-500">수출실적증명서 & 수출신고필증 자동 분류, 데이터 정규화 및 엑셀 다운로드</p>
+                    <p class="text-xs text-slate-500">관세청 유니패스(UNI-PASS) 수출신고필증 & 한국무역협회 수출실적증명서 완벽 지원</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5 animate-pulse"></span>
-                    GitHub Pages Client-Ready
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                    UNI-PASS 매핑 적용
                 </span>
             </div>
         </div>
@@ -63,7 +63,7 @@
                         <span>원클릭 샘플 테스트</span>
                     </div>
                     <p class="text-xs text-slate-500 leading-relaxed">
-                        실제 한국무역협회 및 관세청 표준 양식의 샘플 4종((주)ABC, (주)XYZ, (주)글로벌테크)을 즉시 로드하여 분석합니다.
+                        관세청 UNI-PASS 양식((주)라온코퍼레이션 $23,202)과 무역협회 실적증명서 샘플 4종을 즉시 로드하여 분석합니다.
                     </p>
                     <button id="btnLoadSamples" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center justify-center space-x-2">
                         <i data-lucide="play" class="w-4 h-4"></i>
@@ -75,24 +75,24 @@
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div class="flex items-center space-x-2 text-slate-800 font-bold text-sm">
                         <i data-lucide="info" class="w-4 h-4 text-slate-500"></i>
-                        <span>표준 데이터 스키마</span>
+                        <span>UNI-PASS 매핑 기준</span>
                     </div>
                     <ul class="text-xs text-slate-600 space-y-2">
                         <li class="flex items-start space-x-2">
-                            <span class="font-bold text-slate-800 min-w-[50px]">나라</span>
-                            <span>수출 목적국 / 바이어 국가</span>
+                            <span class="font-bold text-slate-800 min-w-[50px]">기업명</span>
+                            <span>② 수출대행자 / (2)상호</span>
                         </li>
                         <li class="flex items-start space-x-2">
-                            <span class="font-bold text-slate-800 min-w-[50px]">기업</span>
-                            <span>수출자 / 상호명</span>
+                            <span class="font-bold text-slate-800 min-w-[50px]">나라</span>
+                            <span>⑬ 목적국 (CN, US 등)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">성과월</span>
-                            <span>신고수리일자/실적월 (YYYY-MM)</span>
+                            <span>57 신고수리일자 (YYYY-MM)</span>
                         </li>
                         <li class="flex items-start space-x-2">
                             <span class="font-bold text-slate-800 min-w-[50px]">수출액</span>
-                            <span>결제금액 / FOB 성약액 (USD)</span>
+                            <span>45 총신고가격(FOB) 달러화($)</span>
                         </li>
                     </ul>
                 </div>
@@ -235,7 +235,7 @@
         let records = [];
         const COUNTRY_MAP = {
             "US": "미국", "USA": "미국", "UNITED STATES": "미국", "미합중국": "미국",
-            "CN": "중국", "CHINA": "중국",
+            "CN": "중국", "CHINA": "중국", "PRC": "중국",
             "JP": "일본", "JAPAN": "일본",
             "VN": "베트남", "VIETNAM": "베트남",
             "DE": "독일", "GERMANY": "독일",
@@ -256,25 +256,25 @@
             "NL": "네덜란드", "NETHERLANDS": "네덜란드"
         };
 
-        // Built-in Mock Samples
+        // Built-in UNIPASS Samples
         const SAMPLE_DATA = [
             {
-                fileName: "수출실적증명서_ABC_미국_50000.pdf",
+                fileName: "수출신고필증_라온코퍼레이션_중국_23202.pdf",
+                docType: "수출신고필증",
+                confidence: 1.0,
+                country: "중국",
+                company: "(주)라온코퍼레이션",
+                month: "2025-05",
+                amount: 23202
+            },
+            {
+                fileName: "수출실적증명서_라온코퍼레이션_미국_50000.pdf",
                 docType: "수출실적증명서",
                 confidence: 0.96,
                 country: "미국",
-                company: "(주)ABC",
-                month: "2024-01",
+                company: "(주)라온코퍼레이션",
+                month: "2025-04",
                 amount: 50000
-            },
-            {
-                fileName: "수출신고필증_ABC_베트남_30000.pdf",
-                docType: "수출신고필증",
-                confidence: 1.0,
-                country: "베트남",
-                company: "(주)ABC",
-                month: "2024-02",
-                amount: 30000
             },
             {
                 fileName: "수출신고필증_XYZ_일본_20000.pdf",
@@ -282,7 +282,7 @@
                 confidence: 1.0,
                 country: "일본",
                 company: "(주)XYZ",
-                month: "2024-01",
+                month: "2025-01",
                 amount: 20000
             },
             {
@@ -291,7 +291,7 @@
                 confidence: 0.95,
                 country: "독일",
                 company: "(주)글로벌테크",
-                month: "2024-03",
+                month: "2025-03",
                 amount: 75000
             }
         ];
@@ -299,13 +299,15 @@
         // Normalization Helpers
         function normalizeCountry(raw) {
             if (!raw) return "기타";
-            const clean = raw.replace(/\(.*?\)/g, "").trim().toUpperCase();
-            if (COUNTRY_MAP[clean]) return COUNTRY_MAP[clean];
+            const tokens = raw.replace(/[()（）:;_-]+/g, " ").trim().toUpperCase().split(/\s+/);
+            for (let t of tokens) {
+                if (COUNTRY_MAP[t]) return COUNTRY_MAP[t];
+            }
             for (let [k, v] of Object.entries(COUNTRY_MAP)) {
-                if (raw.includes(v) || clean === k) return v;
+                if (raw.includes(v) || tokens.includes(k)) return v;
             }
             const hangul = raw.replace(/[^가-힣]/g, "");
-            return hangul.length >= 2 ? hangul : "미확인국가";
+            return hangul.length >= 2 && !["국가명","목적국","수출국가","정보","현황"].includes(hangul) ? hangul : "미확인국가";
         }
 
         function normalizeMonth(raw) {
@@ -320,7 +322,10 @@
         function normalizeAmount(raw) {
             if (typeof raw === 'number') return raw;
             if (!raw) return 0;
-            const matches = raw.toString().match(/[\d,]+(?:\.\d+)?/g);
+            const str = raw.toString();
+            const dollarMatch = str.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+            if (dollarMatch) return parseFloat(dollarMatch[1].replace(/,/g, ''));
+            const matches = str.match(/[\d,]+(?:\.\d+)?/g);
             if (!matches) return 0;
             for (let i = matches.length - 1; i >= 0; i--) {
                 const val = parseFloat(matches[i].replace(/,/g, ''));
@@ -336,10 +341,10 @@
             let declScore = 0;
 
             if (clean.includes("수출실적증명서") || clean.includes("한국무역협회")) perfScore += 10;
-            if (clean.includes("수출신고필증") || clean.includes("신고수리일자") || clean.includes("관세청")) declScore += 10;
+            if (clean.includes("수출신고필증") || clean.includes("신고수리일자") || clean.includes("관세청") || clean.includes("uni-pass")) declScore += 10;
 
             if (clean.includes("인정실적") || clean.includes("실적기간") || clean.includes("직수출")) perfScore += 3;
-            if (clean.includes("결제금액") || clean.includes("fob") || clean.includes("수출화주") || clean.includes("신고번호")) declScore += 3;
+            if (clean.includes("총신고가격") || clean.includes("fob") || clean.includes("수출대행자") || clean.includes("신고번호")) declScore += 3;
 
             if (perfScore > declScore) return { docType: "수출실적증명서", confidence: Math.min(1.0, perfScore / Math.max(10, perfScore + declScore)) };
             if (declScore > perfScore) return { docType: "수출신고필증", confidence: Math.min(1.0, declScore / Math.max(10, perfScore + declScore)) };
@@ -354,45 +359,45 @@
 
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-            for (let line of lines) {
-                // 1. Company
-                if (company === "(주)미상기업" && (line.includes("상호") || line.includes("수출자") || line.includes("신청인") || line.includes("화주")) && line.includes(":")) {
-                    const val = line.split(":")[1].trim();
-                    if (val && !val.includes("정보") && !val.includes("현황")) company = val;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if ((line.startsWith("[") && line.endsWith("]")) || line.includes("정보]") || line.includes("현황]")) continue;
+
+                // 1. Company: ② 수출대행자 / (2)상호
+                if (company === "(주)미상기업" && (line.includes("수출대행자") || line.includes("②") || line.includes("(2)상호") || line.includes("상호") || line.includes("수출자"))) {
+                    let cand = line.includes(":") ? line.split(":")[1].trim() : line.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*(?:수출대행자|상호)\s*/, "").trim();
+                    cand = cand.replace(/^(?:수출대행자|상호)\s*[:：]?/, "").split(/\(통관|\(대표|\(사업자/)[0].trim();
+                    if (cand.length >= 2 && !["통관고유부호","정보","소재지","수출자구분"].some(h => cand.includes(h))) {
+                        company = cand;
+                    } else if (i + 1 < lines.length) {
+                        let nextLine = lines[i+1].replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*/, "").trim();
+                        if (nextLine.length >= 2 && !["통관고유부호","대표자","소재지"].some(h => nextLine.includes(h))) {
+                            company = nextLine;
+                        }
+                    }
                 }
-                // 2. Country
-                if (country === "기타" && (line.includes("목적국") || line.includes("수출국가") || line.includes("바이어국가")) && line.includes(":")) {
-                    const val = line.split(":")[1].trim();
-                    country = normalizeCountry(val);
+
+                // 2. Country: ⑬ 목적국 / 목적국
+                if (country === "기타" && (line.includes("목적국") || line.includes("⑬") || line.includes("수출국가"))) {
+                    let cand = line.includes(":") ? line.split(":")[1].trim() : line.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮㉒㊺㊽㊿0-9.()（）\s]*목적국\s*/, "").trim();
+                    cand = cand.split(/[⑭⑮㉒㊺㊽㊿]|적재항|선박/)[0].trim();
+                    const cNorm = normalizeCountry(cand);
+                    if (cNorm !== "기타" && cNorm !== "미확인국가") country = cNorm;
                 }
-                // 3. Month
-                if (month === "2024-01" && (line.includes("신고수리일자") || line.includes("수리일자") || line.includes("실적연월") || line.includes("실적기간") || line.includes("발급일자")) && line.includes(":")) {
-                    const val = line.split(":")[1].trim();
-                    month = normalizeMonth(val);
-                }
-                // 4. Amount
-                if (amount === 0 && (line.includes("결제금액") || line.includes("총신고가격") || line.includes("FOB") || line.includes("인정실적") || line.includes("실적금액")) && line.includes(":")) {
-                    const val = line.split(":")[1].trim();
-                    amount = normalizeAmount(val);
+
+                // 3. Month: 57 신고수리일자 / ㊿ 신고수리일자
+                if (month === "2024-01" && (line.includes("신고수리일자") || line.includes("수리일자") || line.includes("실적연월") || line.includes("㊿"))) {
+                    month = normalizeMonth(line);
                 }
             }
 
-            // Fallback Regex
-            if (company === "(주)미상기업") {
-                const compMatch = text.match(/(\((?:주|유)\)[가-힣A-Za-z0-9]+|[가-힣A-Za-z0-9]+\s*주식회사)/);
-                if (compMatch) company = compMatch[1].trim();
-            }
-            if (country === "기타") {
-                for (let [k, v] of Object.entries(COUNTRY_MAP)) {
-                    if (text.includes(v) || text.toUpperCase().includes(` ${k} `)) {
-                        country = v;
-                        break;
-                    }
-                }
-            }
-            if (amount === 0) {
-                const amtMatch = text.match(/(?:USD|\$|금액)\s*[:：]?\s*([\d,]+(?:\.\d+)?)/i);
-                if (amtMatch) amount = normalizeAmount(amtMatch[1]);
+            // 4. Amount: 45 총신고가격(FOB) 달러화
+            const fobBlock = text.match(/(?:㊺|45|\(45\))?\s*총신고가격\s*\(?FOB\)?[\s\S]{0,120}?(?:\$\s*[\d,]+(?:\.\d+)?|USD\s*[\d,]+(?:\.\d+)?)/i);
+            if (fobBlock) {
+                amount = normalizeAmount(fobBlock[0]);
+            } else {
+                const dollarMatch = text.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+                if (dollarMatch) amount = normalizeAmount(dollarMatch[0]);
             }
 
             return {
@@ -419,7 +424,6 @@
                     const pageText = textContent.items.map(s => s.str).join(' ');
                     fullText += pageText + "\n";
                 }
-                // If scanned PDF with no text, use OCR on rendered canvas
                 if (fullText.trim().length < 20) {
                     const page = await pdf.getPage(1);
                     const viewport = page.getViewport({ scale: 2.0 });
@@ -453,7 +457,6 @@
             document.getElementById('cardsSection').classList.remove('hidden');
             document.getElementById('resultSection').classList.remove('hidden');
 
-            // 1. Render Document Cards
             const cardsContainer = document.getElementById('cardsContainer');
             cardsContainer.innerHTML = '';
             records.forEach(r => {
@@ -476,7 +479,6 @@
                 cardsContainer.appendChild(card);
             });
 
-            // 2. Populate Company Select
             const companySelect = document.getElementById('companySelect');
             const currentSelected = companySelect.value || "전체";
             const companies = ["전체", ...new Set(records.map(r => r.company))].sort();
@@ -498,7 +500,6 @@
             const selectedCompany = document.getElementById('companySelect').value || "전체";
             const filtered = selectedCompany === "전체" ? records : records.filter(r => r.company === selectedCompany);
 
-            // KPI update
             const totalAmount = filtered.reduce((acc, cur) => acc + cur.amount, 0);
             document.getElementById('kpiLabelCompany').textContent = selectedCompany === "전체" ? "전체 기업 총수출 성약액" : `${selectedCompany} 총수출 성약액`;
             document.getElementById('kpiTotalAmount').textContent = `$${totalAmount.toLocaleString()} USD`;
@@ -507,11 +508,10 @@
             document.getElementById('kpiTotalCompanies').textContent = `${new Set(records.map(r => r.company)).size} 개사`;
             document.getElementById('btnExcelLabel').textContent = `'${selectedCompany}' 엑셀 다운로드 (.xlsx)`;
 
-            // Table Render
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
-            filtered.forEach((r, idx) => {
+            filtered.forEach((r) => {
                 const realIndex = records.indexOf(r);
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition text-slate-800";
@@ -526,7 +526,6 @@
                 tbody.appendChild(tr);
             });
 
-            // Attach inline editing listeners
             document.querySelectorAll('.editable-cell').forEach(cell => {
                 cell.addEventListener('blur', function() {
                     const idx = parseInt(this.getAttribute('data-index'));
@@ -562,8 +561,6 @@
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `${selectedCompany.slice(0, 20)} 수출내역`);
-
-            // Column width
             ws['!cols'] = [{ wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 18 }];
 
             const fileName = `수출실적내역_${selectedCompany}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
@@ -601,7 +598,6 @@
         document.getElementById('btnExportExcel').addEventListener('click', exportToExcel);
         document.getElementById('btnExportCsv').addEventListener('click', exportToCsv);
 
-        // Drag & Drop
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
 
@@ -650,7 +646,6 @@
             updateUI();
         }
 
-        // Initialize Lucide icons
         lucide.createIcons();
     </script>
 </body>

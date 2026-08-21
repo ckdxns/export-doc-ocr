@@ -1,5 +1,6 @@
 """
 테스트 및 시연용 샘플 문서 생성기 (PDF 및 이미지 생성)
+관세청 유니패스(UNI-PASS) 수출신고필증 및 한국무역협회 수출실적증명서 표준 양식
 """
 import os
 import io
@@ -9,7 +10,7 @@ from typing import List, Dict, Any
 
 class SampleGenerator:
     """
-    실제 수출실적증명서 및 수출신고필증 서식과 동일한 구조의
+    실제 수출실적증명서 및 관세청 수출신고필증 서식과 동일한 구조의
     샘플 PDF 및 이미지 파일을 동적으로 생성합니다.
     """
 
@@ -29,11 +30,11 @@ class SampleGenerator:
     @classmethod
     def generate_performance_certificate_pdf(
         cls,
-        company: str = "(주)ABC",
+        company: str = "(주)라온코퍼레이션",
         country: str = "미국",
-        month: str = "2024-01",
+        month: str = "2025-04",
         amount: int = 50000,
-        cert_no: str = "KITA-2024-08912"
+        cert_no: str = "KITA-2025-08912"
     ) -> bytes:
         """
         한국무역협회 스타일의 '수출실적증명서' PDF 생성
@@ -56,9 +57,9 @@ class SampleGenerator:
 
 1. 신청인(수출자) 정보
    - 상호(업체명) : {company}
-   - 사업자등록번호 : 123-45-67890
-   - 대표자명 : 홍길동
-   - 소재지 : 서울특별시 강남구 영동대로 511
+   - 사업자등록번호 : 219-86-01252
+   - 대표자명 : 김지연
+   - 소재지 : 경기도 남양주시 다산지금로 202
 
 2. 수출 실적 내역
    ------------------------------------------------------------
@@ -72,7 +73,7 @@ class SampleGenerator:
    본 증명서는 대외무역법 시행령 제26조 규정에 의하여 상기 업체의
    수출실적(성약액)이 사실과 틀림없음을 증명합니다.
 
-   2024년 01월 20일
+   2025년 04월 20일
 
                     한 국 무 역 협 회 장 (직인생략)
 ============================================================
@@ -91,14 +92,17 @@ class SampleGenerator:
     @classmethod
     def generate_export_declaration_pdf(
         cls,
-        company: str = "(주)ABC",
-        country: str = "베트남",
-        month: str = "2024-02",
-        amount: int = 30000,
-        decl_no: str = "110-24-0102934X"
+        company: str = "(주)라온코퍼레이션",
+        country: str = "중국",
+        country_code: str = "CN PRC",
+        month_full: str = "2025/05/06",
+        month_norm: str = "2025-05",
+        amount_usd: int = 23202,
+        amount_krw: int = 34283617,
+        decl_no: str = "10996-25-900060X"
     ) -> bytes:
         """
-        관세청 표준 양식 스타일의 '수출신고필증' PDF 생성
+        관세청 유니패스(UNI-PASS) 표준 양식 스타일의 '수출신고필증(적재전, 갑지)' PDF 생성
         """
         font_path = cls._get_font_path()
         doc = pymupdf.open()
@@ -108,37 +112,40 @@ class SampleGenerator:
 
         text_content = f"""
 ============================================================
-                    수  출  신  고  필  증
-                [ EXPORT DECLARATION CERTIFICATE ]
+              수  출  신  고  필  증 (적재전, 갑지)
+                     [ UNI-PASS 관세청 ]
 ============================================================
 
-(1) 신고번호 : {decl_no}       (2) 세관/과 : 부산세관 통관국
-(3) 신고일자 : {month}-10              (52) 신고수리일자 : {month}-12
+① 신고자 : 그린관세사무소 김종선
+⑤ 신고번호 : {decl_no}       ⑥ 세관과 : 020-09       ⑦ 신고일자 : {month_full}
 
 ------------------------------------------------------------
-[수출자 및 화주 정보]
-(4) 수출대행자 : 
-(5) 수출화주(상호) : {company}
-    - 사업자번호 : 220-81-99881
-    - 소재지 : 경기도 성남시 분당구 판교역로 100
+[수출대행자 및 화주 정보]
+② 수출대행자 : {company}
+   (통관고유부호) 라온코퍼-1-18-1-01-5
+   수출화주 : {company}
+   (주소) 경기도 남양주시 다산지금로 202
+   (대표자) 김지연              (소재지) 12284
+   (사업자등록번호) 219-86-01252
 
 ------------------------------------------------------------
-[운송 및 거래조건]
-(11) 목적국(국가명) : {country} (VN)
-(12) 적재항 : KR PUS (부산항)
-(13) 양륙항 : VN SGN (호치민)
-(27) 인도조건 : FOB
+[거래 및 목적국 정보]
+⑪ 거래구분 : 11 일반형태      ⑫ 종류 : A 일반수출
+⑬ 목적국 : {country_code} (국가명: {country})
+⑭ 적재항 : KRINC 인천항       ⑮ 선박회사 : (항공사)
 
 ------------------------------------------------------------
-[결제 및 신고 금액]
-(48) 결제금액 : USD {amount:,}.00
-(49) 총신고가격(FOB) : USD {amount:,}.00
-(50) 환율 : 1,320.50
+[결제 및 총신고가격 정보]
+㉒ 결제방법 : TT 단순송금방식
+㊺ 총신고가격(FOB) : 
+    $ {amount_usd:,} (달러화)
+    ₩ {amount_krw:,} (원화)
+㊽ 결제금액 : FOB-KRW-34,283,617.00
 
 ------------------------------------------------------------
-위 물품의 수출신고를 관세법 제248조의 규정에 의하여 수리합니다.
+㊿ 신고수리일자 : {month_full}
+담당자 : 관세청 인천세관장
 
-                          관  세  청  장
 ============================================================
 """
         kwargs = {}
@@ -146,7 +153,7 @@ class SampleGenerator:
             kwargs["fontfile"] = font_path
             kwargs["fontname"] = "malgun"
 
-        page.insert_text(pymupdf.Point(60, 80), text_content, fontsize=11, **kwargs)
+        page.insert_text(pymupdf.Point(60, 80), text_content, fontsize=10, **kwargs)
 
         pdf_bytes = doc.tobytes()
         doc.close()
@@ -155,36 +162,38 @@ class SampleGenerator:
     @classmethod
     def generate_all_samples(cls) -> List[Dict[str, Any]]:
         """
-        기본 시연 및 테스트를 위한 4개의 표준 샘플 생성
+        관세청 유니패스 및 무역협회 실전 서식 샘플 4종 생성
         """
         samples = [
             {
-                "name": "수출실적증명서_ABC_미국_50000.pdf",
-                "bytes": cls.generate_performance_certificate_pdf(
-                    company="(주)ABC", country="미국", month="2024-01", amount=50000, cert_no="KITA-2024-001"
+                "name": "수출신고필증_라온코퍼레이션_중국_23202.pdf",
+                "bytes": cls.generate_export_declaration_pdf(
+                    company="(주)라온코퍼레이션", country="중국", country_code="CN PRC",
+                    month_full="2025/05/06", month_norm="2025-05", amount_usd=23202, amount_krw=34283617
                 ),
-                "expected": {"doc_type": "수출실적증명서", "company": "(주)ABC", "country": "미국", "month": "2024-01", "amount": 50000.0}
+                "expected": {"doc_type": "수출신고필증", "company": "(주)라온코퍼레이션", "country": "중국", "month": "2025-05", "amount": 23202.0}
             },
             {
-                "name": "수출신고필증_ABC_베트남_30000.pdf",
-                "bytes": cls.generate_export_declaration_pdf(
-                    company="(주)ABC", country="베트남", month="2024-02", amount=30000, decl_no="110-24-00192X"
+                "name": "수출실적증명서_라온코퍼레이션_미국_50000.pdf",
+                "bytes": cls.generate_performance_certificate_pdf(
+                    company="(주)라온코퍼레이션", country="미국", month="2025-04", amount=50000, cert_no="KITA-2025-001"
                 ),
-                "expected": {"doc_type": "수출신고필증", "company": "(주)ABC", "country": "베트남", "month": "2024-02", "amount": 30000.0}
+                "expected": {"doc_type": "수출실적증명서", "company": "(주)라온코퍼레이션", "country": "미국", "month": "2025-04", "amount": 50000.0}
             },
             {
                 "name": "수출신고필증_XYZ_일본_20000.pdf",
                 "bytes": cls.generate_export_declaration_pdf(
-                    company="(주)XYZ", country="일본", month="2024-01", amount=20000, decl_no="110-24-00883Y"
+                    company="(주)XYZ", country="일본", country_code="JP JAPAN",
+                    month_full="2025/01/12", month_norm="2025-01", amount_usd=20000, amount_krw=26800000, decl_no="110-25-00883Y"
                 ),
-                "expected": {"doc_type": "수출신고필증", "company": "(주)XYZ", "country": "일본", "month": "2024-01", "amount": 20000.0}
+                "expected": {"doc_type": "수출신고필증", "company": "(주)XYZ", "country": "일본", "month": "2025-01", "amount": 20000.0}
             },
             {
                 "name": "수출실적증명서_글로벌테크_독일_75000.pdf",
                 "bytes": cls.generate_performance_certificate_pdf(
-                    company="(주)글로벌테크", country="독일", month="2024-03", amount=75000, cert_no="KITA-2024-099"
+                    company="(주)글로벌테크", country="독일", month="2025-03", amount=75000, cert_no="KITA-2025-099"
                 ),
-                "expected": {"doc_type": "수출실적증명서", "company": "(주)글로벌테크", "country": "독일", "month": "2024-03", "amount": 75000.0}
+                "expected": {"doc_type": "수출실적증명서", "company": "(주)글로벌테크", "country": "독일", "month": "2025-03", "amount": 75000.0}
             }
         ]
         return samples
